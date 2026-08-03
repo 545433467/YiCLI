@@ -6,9 +6,15 @@
 
 ## 🌐 网页版使用指南
 
-👉 **[打开 YiCLI 使用指南页面](docs/guide/index.html)**（Vue 3 单文件页面，浏览器直接打开即可，无需构建）
+👉 **[在线预览使用指南（htmlpreview，零配置）](https://htmlpreview.github.io/?https://github.com/545433467/YiCLI/blob/main/docs/guide/index.html)**
 
-页面覆盖：项目整体介绍、核心能力、真实会话演示、快速开始（构建 / 配置 / 运行）、斜杠命令速查（6 个分类 Tab）、安全模型、MCP / Skill / 会话恢复扩展指南与常见问题 FAQ，所有命令块支持一键复制。
+> 注意：GitHub 不会渲染仓库里的 `.html` 文件（点击只会显示源码），所以 README 里的链接指向在线预览服务；正式方案是 GitHub Pages，见下。
+
+**推荐：GitHub Pages 托管**。仓库已附带 [.github/workflows/pages.yml](.github/workflows/pages.yml) 自动发布工作流，只需在 GitHub 仓库 **Settings → Pages → Source** 选择 **GitHub Actions**（一次设置），之后每次推送到 `main` 会自动发布到：
+
+👉 **https://545433467.github.io/YiCLI/**
+
+页面覆盖：项目整体介绍、核心能力、真实会话演示、快速开始（构建 / 配置 / 运行）、斜杠命令速查（6 个分类 Tab）、安全模型、MCP / Skill / 会话恢复扩展指南与常见问题 FAQ，所有命令块支持一键复制。页面源码在 [docs/guide/index.html](docs/guide/index.html)（Vue 3 单文件，也可浏览器直接打开本地文件）。
 
 ```bash
 # 本地预览（任选其一）
