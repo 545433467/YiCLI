@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YiCLI 使用指南 · Java Agent CLI</title>
+  <meta name="description" content="YiCLI（原 PaiCLI）使用指南：安装、配置、命令速查、安全模型与架构介绍。">
+  <script src="https://unpkg.com/vue@3.4.38/dist/vue.global.prod.js"></script>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --bg-soft: #161b22;
+      --bg-code: #010409;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-dim: #8b949e;
+      --accent: #58a6ff;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --red: #f85149;
+      --purple: #bc8cff;
+      --radius: 10px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    code, pre, .mono {
+      font-family: "JetBrains Mono", Consolas, "Courier New", monospace;
+    }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 20px; }
+
+    /* ---------- Nav ---------- */
+    nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(13, 17, 23, 0.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      max-width: 980px; margin: 0 auto; padding: 12px 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      flex-wrap: wrap;
+    }
+    .logo { font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
+    .logo .bracket { color: var(--accent); }
+    .logo .version { color: var(--text-dim); font-size: 12px; font-weight: 400; margin-left: 6px; }
+    .nav-links { display: flex; gap: 16px; flex-wrap: wrap; }
+    .nav-links a { color: var(--text-dim); text-decoration: none; font-size: 14px; }
+    .nav-links a:hover { color: var(--accent); }
+
+    /* ---------- Hero ---------- */
+    .hero { padding: 72px 20px 56px; text-align: center; }
+    .hero h1 { font-size: 46px; font-weight: 800; letter-spacing: 1px; }
+    .hero h1 .accent { color: var(--accent); }
+    .hero .sub { color: var(--text-dim); margin-top: 14px; font-size: 17px; }
+    .badges { margin-top: 22px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .badge {
+      border: 1px solid var(--border); background: var(--bg-soft);
+      border-radius: 999px; padding: 4px 14px; font-size: 13px; color: var(--text-dim);
+    }
+    .badge b { color: var(--green); font-weight: 600; }
+    .cta { margin-top: 28px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-block; padding: 10px 22px; border-radius: 8px;
+      text-decoration: none; font-size: 15px; font-weight: 600; border: 1px solid var(--border);
+      color: var(--text); background: var(--bg-soft); transition: 0.15s;
+    }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn.primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+    .btn.primary:hover { background: #388bfd; color: #fff; }
+
+    /* ---------- Sections ---------- */
+    section { padding: 48px 0; border-top: 1px solid var(--border); }
+    section h2 {
+      font-size: 26px; margin-bottom: 6px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    section .lead { color: var(--text-dim); margin-bottom: 24px; }
+    h3 { font-size: 17px; margin: 22px 0 10px; color: var(--text); }
+
+    .card {
+      background: var(--bg-soft); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 18px 20px; margin-bottom: 14px;
+    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+    .feature .icon { font-size: 22px; }
+    .feature h4 { margin: 8px 0 4px; font-size: 15px; }
+    .feature p { color: var(--text-dim); font-size: 13.5px; }
+
+    /* ---------- Code blocks ---------- */
+    pre {
+      background: var(--bg-code); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 16px;
+      overflow-x: auto; font-size: 13.5px; line-height: 1.65;
+    }
+    pre .c { color: var(--text-dim); }   /* comment */
+    pre .k { color: var(--purple); }     /* keyword */
+    pre .s { color: var(--green); }      /* string */
+    pre .p { color: var(--yellow); }     /* prompt */
+    .code-wrap { position: relative; margin-bottom: 14px; }
+    .copy-btn {
+      position: absolute; top: 8px; right: 8px;
+      background: var(--bg-soft); border: 1px solid var(--border); color: var(--text-dim);
+      border-radius: 6px; padding: 3px 10px; font-size: 12px; cursor: pointer;
+    }
+    .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+    /* ---------- Tables ---------- */
+    .tbl-wrap { overflow-x: auto; margin-bottom: 14px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 8px 12px; border: 1px solid var(--border); }
+    th { background: var(--bg-soft); color: var(--text-dim); font-weight: 600; }
+    td code { color: var(--accent); font-size: 13px; }
+    tr:nth-child(even) td { background: rgba(22, 27, 34, 0.5); }
+
+    /* ---------- Tabs ---------- */
+    .tabs { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .tab {
+      border: 1px solid var(--border); background: var(--bg-soft); color: var(--text-dim);
+      padding: 6px 14px; border-radius: 999px; cursor: pointer; font-size: 13.5px;
+    }
+    .tab.active { border-color: var(--accent); color: var(--accent); }
+
+    /* ---------- FAQ ---------- */
+    .faq-item { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; }
+    .faq-q {
+      width: 100%; text-align: left; background: var(--bg-soft); color: var(--text);
+      border: none; padding: 13px 16px; font-size: 14.5px; cursor: pointer; border-radius: var(--radius);
+    }
+    .faq-q:hover { color: var(--accent); }
+    .faq-a { padding: 0 16px 14px; color: var(--text-dim); font-size: 14px; }
+
+    /* ---------- Terminal mock ---------- */
+    .terminal {
+      background: var(--bg-code); border: 1px solid var(--border); border-radius: var(--radius);
+      overflow: hidden; margin-bottom: 16px;
+    }
+    .terminal-bar {
+      display: flex; gap: 6px; padding: 9px 14px;
+      background: var(--bg-soft); border-bottom: 1px solid var(--border);
+    }
+    .dot { width: 11px; height: 11px; border-radius: 50%; }
+    .dot.r { background: #ff5f56; } .dot.y { background: #ffbd2e; } .dot.g { background: #27c93f; }
+    .terminal-body { padding: 14px 16px; font-size: 13.5px; line-height: 1.7; overflow-x: auto; }
+    .terminal-body .p { color: var(--green); }
+    .terminal-body .dim { color: var(--text-dim); }
+
+    /* ---------- Footer ---------- */
+    footer {
+      border-top: 1px solid var(--border); padding: 28px 0 40px;
+      text-align: center; color: var(--text-dim); font-size: 13px;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+
+    @media (max-width: 640px) {
+      .hero h1 { font-size: 34px; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <!-- Nav -->
+  <nav>
+    <div class="nav-inner">
+      <div class="logo mono"><span class="bracket">{</span> YiCLI <span class="bracket">}</span><span class="version">v16.1 · 原 PaiCLI</span></div>
+      <div class="nav-links">
+        <a href="#features">核心能力</a>
+        <a href="#quickstart">快速开始</a>
+        <a href="#commands">命令速查</a>
+        <a href="#security">安全模型</a>
+        <a href="#extend">扩展与生态</a>
+        <a href="#faq">FAQ</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <header class="hero">
+    <h1 class="mono"><span class="accent">YiCLI</span> — Terminal-First Agent</h1>
+    <p class="sub">面向商业使用的 <b>Java Agent CLI</b>，对标 Claude Code。ReAct / Plan-and-Execute / Multi-Agent 三路执行，17 个内置工具 + MCP 动态工具，开箱即用。</p>
+    <div class="badges">
+      <span class="badge">Java <b>17+</b></span>
+      <span class="badge">Maven</span>
+      <span class="badge">7 家 <b>LLM Provider</b></span>
+      <span class="badge">23+ 期演进</span>
+      <span class="badge">HITL + 策略层</span>
+    </div>
+    <div class="cta">
+      <a class="btn primary" href="#quickstart">🚀 快速开始</a>
+      <a class="btn" href="#commands">⌨️ 命令速查</a>
+      <a class="btn" href="https://github.com/545433467/YiCLI" target="_blank" rel="noopener">GitHub ↗</a>
+    </div>
+  </header>
+
+  <!-- Features -->
+  <section id="features">
+    <div class="container">
+      <h2>⚡ 核心能力</h2>
+      <p class="lead">一个命令行动手，覆盖从代码检索到远程通道的完整 Agent 产品形态。</p>
+      <div class="grid">
+        <div class="card feature"><div class="icon">🧭</div><h4>三条执行路径</h4><p>默认 ReAct 实时探索代码；<code>/plan</code> 走 DAG 规划后执行；<code>/team</code> 走 Planner / Worker / Reviewer 多代理协作。</p></div>
+        <div class="card feature"><div class="icon">🧰</div><h4>17 个内置工具</h4><p>文件读写、grep（优先 ripgrep）、命令执行、RAG 语义检索、联网搜索/抓取、浏览器会话、Skill 加载、<code>task</code> 子代理分发等。</p></div>
+        <div class="card feature"><div class="icon">🔌</div><h4>MCP 协议</h4><p>stdio + Streamable HTTP，工具 / resources / prompts 自动注册，<code>@server:uri</code> 资源引用，进程崩溃自动重启。</p></div>
+        <div class="card feature"><div class="icon">🧠</div><h4>记忆与上下文</h4><p>短期 / 长期记忆、两级压缩、长上下文模式；<code>/save</code> 手动保存稳定事实。</p></div>
+        <div class="card feature"><div class="icon">📇</div><h4>RAG 代码检索</h4><p>SQLite + Embedding（Ollama / OpenAI / 智谱），<code>/index</code>、<code>/search</code>、<code>/graph</code> 一键用。</p></div>
+        <div class="card feature"><div class="icon">🛡️</div><h4>HITL + 策略层</h4><p>危险操作人工审批、路径围栏、命令黑名单、审计日志、权限记忆免打扰、无头模式默认拒绝。</p></div>
+        <div class="card feature"><div class="icon">📸</div><h4>Side-Git 快照</h4><p>每轮 turn 前后自动快照，<code>/restore &lt;N&gt;</code> 一键回滚，不污染项目 .git。</p></div>
+        <div class="card feature"><div class="icon">📚</div><h4>Skill 系统</h4><p>SKILL.md 专家手册按需加载，内置 web-access 技能，支持用户级 / 项目级覆盖。</p></div>
+        <div class="card feature"><div class="icon">🌐</div><h4>多形态 UI</h4><p>inline 流式 TUI（默认，底部状态 dock + 可折叠工具块）/ Lanterna 全屏 / plain 兜底。</p></div>
+        <div class="card feature"><div class="icon">🔁</div><h4>会话与检查点</h4><p>退出自动保存会话，取消或失败自动留检查点，<code>/resume</code> 续跑不丢上下文。</p></div>
+        <div class="card feature"><div class="icon">🩺</div><h4>体检与可观测</h4><p><code>/doctor</code> 一键体检；turn/tool 遥测写入 JSONL，<code>/telemetry</code> 看 token 与成本。</p></div>
+        <div class="card feature"><div class="icon">💬</div><h4>微信 iLink 通道</h4><p>扫码绑定后远程收发消息，非交互默认拒绝策略保护 workspace。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Terminal demo -->
+  <section>
+    <div class="container">
+      <h2>🖥️ 真实会话长这样</h2>
+      <p class="lead">底部 dock 显示模型 / MCP / Skill / ctx / token 状态，工具调用可折叠展开。</p>
+      <div class="terminal">
+        <div class="terminal-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
+        <div class="terminal-body mono">
+          <div><span class="p">* </span>帮我看看这个项目里 HITL 审批是怎么实现的</div>
+          <div class="dim">🧠 思考过程：先定位 HitlToolRegistry，再看审批链……</div>
+          <div class="dim">→ Read 3 files <span class="dim">(ctrl+o to expand)</span></div>
+          <div><span class="p">* </span>给审批框加个超时自动拒绝，YICLI_HITL_TIMEOUT_SECONDS=30</div>
+          <div class="dim">→ execute_command <span class="dim">(需要审批)</span></div>
+          <div class="dim">┌────────── ⚠️ HITL 审批请求 ──────────┐</div>
+          <div class="dim">│ 工具: execute_command · 来源: 用户目标…│</div>
+          <div class="dim">└──────────────────────────────────┘</div>
+          <div><span class="p">> </span><span class="c">y</span></div>
+          <div>✅ 已批准并执行，写入审计日志。</div>
+          <div class="dim">────────────────────────────────</div>
+          <div><span class="p">* </span>总结一下改动，并 /export 导出会话</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quickstart -->
+  <section id="quickstart">
+    <div class="container">
+      <h2>🚀 快速开始</h2>
+      <p class="lead">Java 17+ 与 Maven 即可运行，整个过程大约 3 分钟。</p>
+
+      <h3>1. 环境要求</h3>
+      <ul class="card" style="list-style:none">
+        <li>✅ Java 17+（推荐 21）</li>
+        <li>✅ Maven 3.8+</li>
+        <li>✅ 可选：ripgrep（<code>grep_code</code> 优先使用，未安装自动回退）</li>
+        <li>🔑 至少一个 API Key：<code>GLM_API_KEY</code> / <code>DEEPSEEK_API_KEY</code> / <code>STEP_API_KEY</code> / <code>KIMI_API_KEY</code> / <code>FREELLMAPI_API_KEY</code> / <code>XFYUN_MAAS_API_KEY</code> / <code>AGNES_API_KEY</code></li>
+      </ul>
+
+      <h3>2. 构建与运行</h3>
+      <div class="code-wrap">
+        <button class="copy-btn" @click="copy('quickstart')">复制</button>
+        <pre><code><span class="c"># 1. 配置 API Key（.env 已被 gitignore，不会上传）</span>
+cp .env.example .env
+
+<span class="c"># 2. 构建（默认跳过测试，优先产出可手工验收 jar）</span>
+mvn clean package
+
+<span class="c"># 3. 运行</span>
+java -jar target/yicli-1.0-SNAPSHOT.jar
+
+<span class="c"># 4. 环境体检（可选）</span>
+yicli doctor</code></pre>
+      </div>
+
+      <h3>3. 第一次对话</h3>
+      <div class="code-wrap">
+        <button class="copy-btn" @click="copy('firstrun')">复制</button>
+        <pre><code><span class="p">* </span>/model glm-5.1          <span class="c"># 切换模型（默认按配置）</span>
+<span class="p">* </span>/doctor                <span class="c"># 检查 Java / ripgrep / API Key / 数据目录</span>
+<span class="p">* </span>帮我读 README.md 并总结核心架构
+<span class="p">* </span>/hitl on               <span class="c"># 开启危险操作人工审批（可选）</span>
+<span class="p">* </span>/exit</code></pre>
+      </div>
+
+      <h3>4. 常用环境变量</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>变量</th><th>默认值</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td><code>YICLI_RENDERER</code></td><td>inline</td><td>渲染器形态：inline / lanterna / plain</td></tr>
+            <tr><td><code>YICLI_HITL_TIMEOUT_SECONDS</code></td><td>0</td><td>审批超时秒数（超时自动拒绝）</td></tr>
+            <tr><td><code>YICLI_HITL_APPROVE_ALL_LIMIT</code></td><td>10</td><td>"全部放行"额度，用尽后重新审批</td></tr>
+            <tr><td><code>YICLI_SANDBOX_MODE</code></td><td>off</td><td>execute_command 容器沙箱：off / docker</td></tr>
+            <tr><td><code>YICLI_MCP_AUTO_RESTART</code></td><td>true</td><td>MCP stdio server 崩溃自动重启</td></tr>
+            <tr><td><code>YICLI_HEADLESS_COMMAND_ALLOWLIST</code></td><td>空</td><td>无头模式命令精确白名单（逗号分隔）</td></tr>
+            <tr><td><code>YICLI_TELEMETRY_ENABLED</code></td><td>true</td><td>turn/tool 遥测 JSONL 落盘</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Commands -->
+  <section id="commands">
+    <div class="container">
+      <h2>⌨️ 命令速查</h2>
+      <p class="lead">斜杠命令按类别速查；完整列表见 README。</p>
+
+      <div class="tabs">
+        <button v-for="(tab, i) in commandTabs" :key="tab.id" class="tab"
+                :class="{ active: activeTab === i }" @click="activeTab = i">{{ tab.label }}</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>命令</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr v-for="row in commandTabs[activeTab].rows" :key="row.cmd">
+              <td><code>{{ row.cmd }}</code></td>
+              <td>{{ row.desc }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>进程级入口</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>命令</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td><code>yicli doctor</code></td><td>环境体检</td></tr>
+            <tr><td><code>yicli serve --http --port 8080</code></td><td>启动 Runtime API（需 YICLI_RUNTIME_API_KEY）</td></tr>
+            <tr><td><code>yicli wechat setup / start / status</code></td><td>微信 iLink 通道绑定与启动</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Security -->
+  <section id="security">
+    <div class="container">
+      <h2>🛡️ 安全模型</h2>
+      <p class="lead">本地 Agent 默认不做容器/VM 沙箱，安全模型是 HITL + 路径校验 + 命令黑名单 + 审计四层。</p>
+      <div class="grid">
+        <div class="card feature"><div class="icon">🚧</div><h4>PathGuard</h4><p>文件类工具路径强制限定在项目根内，拦截绝对路径逃逸、<code>..</code> 穿越与符号链接逃逸。</p></div>
+        <div class="card feature"><div class="icon">⛔</div><h4>CommandGuard</h4><p>命令黑名单 fast-fail：sudo、rm -rf 全盘、mkfs、dd of=/dev、fork bomb、curl|sh 等。</p></div>
+        <div class="card feature"><div class="icon">👀</div><h4>HITL 审批</h4><p>write_file / execute_command / create_project / revert_turn / 所有 MCP 工具默认走审批；审批框已做 ANSI 注入清洗，可配超时。</p></div>
+        <div class="card feature"><div class="icon">🔑</div><h4>权限记忆</h4><p>批准过的调用按 (tool, 参数) 精确匹配记入 <code>~/.yicli/permissions.json</code>，跨会话免打扰；全部放行有次数上限。</p></div>
+        <div class="card feature"><div class="icon">📋</div><h4>审计脱敏</h4><p>JSONL 审计按天落盘；write_file 不记 content 正文，MCP 参数按字段名掩码 token/key/secret。</p></div>
+        <div class="card feature"><div class="icon">🚫</div><h4>无头默认拒绝</h4><p>微信 / Runtime API / 后台任务没有审批面板，走非交互默认拒绝：只读放行，写入拒绝敏感文件（.env / *.pem / id_rsa 等）。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Extend -->
+  <section id="extend">
+    <div class="container">
+      <h2>🔌 扩展与生态</h2>
+      <p class="lead">YiCLI 的扩展面是声明式的：知识用 Skill，工具用 MCP，行为用 Prompt 覆盖，生命周期用事件总线。</p>
+      <div class="card">
+        <h3>✍️ 接入自己的 MCP server</h3>
+        <div class="code-wrap">
+          <button class="copy-btn" @click="copy('mcp')">复制</button>
+          <pre><code><span class="c"># ~/.yicli/mcp.json 或项目 .yicli/mcp.json（项目级按 server 名覆盖）</span>
+{
+  "mcpServers": {
+    "my-server": {
+      "command": "npx",
+      "args": ["-y", "my-mcp-server"],
+      "env": { "TOKEN": "${MY_TOKEN}" }
+    }
+  }
+}</code></pre>
+        </div>
+        <p style="font-size:13.5px;color:var(--text-dim)">启动后自动注册为 <code>mcp__my-server__*</code> 工具；<code>${VAR}</code> 支持环境变量 / 系统属性 / .env。</p>
+      </div>
+      <div class="card">
+        <h3>📦 Skill：把专家手册打包给模型</h3>
+        <p style="font-size:14px;color:var(--text-dim)">每个 Skill 是一个目录：<code>SKILL.md</code>（决策手册）+ <code>references/</code>（按需读取）。加载位置：jar 内置 &lt; 用户级 <code>~/.yicli/skills/</code> &lt; 项目级 <code>.yicli/skills/</code>。</p>
+        <div class="code-wrap" style="margin-top:10px">
+          <button class="copy-btn" @click="copy('skill')">复制</button>
+          <pre><code><span class="p">* </span>/skill list
+<span class="p">* </span>/skill show web-access
+<span class="p">* </span>/skill on my-skill      <span class="c"># 模型看到匹配描述时自动 load_skill</span></code></pre>
+        </div>
+      </div>
+      <div class="card">
+        <h3>🔁 会话与恢复</h3>
+        <p style="font-size:14px;color:var(--text-dim)">退出自动保存会话；取消或 LLM 失败自动留检查点。换终端、关电脑都不丢上下文。</p>
+        <div class="code-wrap" style="margin-top:10px">
+          <button class="copy-btn" @click="copy('resume')">复制</button>
+          <pre><code><span class="p">* </span>/sessions
+<span class="p">* </span>/resume session_1722600000000_1</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq">
+    <div class="container">
+      <h2>❓ 常见问题</h2>
+      <p class="lead">选几个高频问题；更多见 README 与 docs/agents-reference.md。</p>
+      <div v-for="(item, i) in faqs" :key="i" class="faq-item">
+        <button class="faq-q" @click="toggleFaq(i)">{{ item.q }}</button>
+        <div v-if="faqOpen[i]" class="faq-a">{{ item.a }}</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p class="mono">YiCLI · Java Agent CLI · 由 PaiCLI 改名而来</p>
+      <p style="margin-top:6px">
+        <a href="https://github.com/545433467/YiCLI" target="_blank" rel="noopener">GitHub</a> ·
+        <a href="../../README.md">README</a> ·
+        <a href="../../AGENTS.md">AGENTS.md</a> ·
+        <a href="../../docs/agents-reference.md">Agent 参考文档</a>
+      </p>
+    </div>
+  </footer>
+</div>
+
+<script>
+const { createApp } = Vue;
+
+createApp({
+  data() {
+    return {
+      activeTab: 0,
+      faqOpen: {},
+      commandTabs: [
+        {
+          id: 'exec', label: '执行模式',
+          rows: [
+            { cmd: '/plan [任务]', desc: '下一条 / 本条任务走 Plan-and-Execute（DAG 规划后执行）' },
+            { cmd: '/team [任务]', desc: '下一条 / 本条任务走 Multi-Agent 协作' },
+            { cmd: '/model <provider>', desc: '切换模型：glm / deepseek / step / kimi / freellmapi / xfyun / agnes' },
+            { cmd: '/cancel', desc: '取消运行中的任务' },
+          ]
+        },
+        {
+          id: 'hitl', label: '安全与审批',
+          rows: [
+            { cmd: '/hitl on|off', desc: '启用 / 关闭危险操作人工审批' },
+            { cmd: '/permission', desc: '查看已记住的权限规则（/permission clear 清空）' },
+            { cmd: '/policy', desc: '查看安全策略状态（路径围栏 / 命令黑名单 / 审计目录）' },
+            { cmd: '/audit [N]', desc: '查看最近 N 条危险工具审计（默认 10）' },
+          ]
+        },
+        {
+          id: 'mcp', label: 'MCP 与浏览器',
+          rows: [
+            { cmd: '/mcp', desc: '查看 MCP server 状态' },
+            { cmd: '/mcp restart <name>', desc: '重启单个 MCP server' },
+            { cmd: '/mcp logs <name>', desc: '查看 server 最近日志' },
+            { cmd: '/mcp resources <name>', desc: '查看 resources / prompts' },
+            { cmd: '/browser status', desc: '查看浏览器会话状态（shared/isolated）' },
+          ]
+        },
+        {
+          id: 'mem', label: '记忆与检索',
+          rows: [
+            { cmd: '/memory list|search|delete|clear', desc: '长期记忆管理' },
+            { cmd: '/save [--global] <事实>', desc: '手动保存项目级 / 全局长期记忆' },
+            { cmd: '/index [路径]', desc: '索引代码库（RAG）' },
+            { cmd: '/search <查询>', desc: '语义检索代码' },
+            { cmd: '/graph <类名>', desc: '查看代码关系图谱' },
+          ]
+        },
+        {
+          id: 'session', label: '会话与快照',
+          rows: [
+            { cmd: '/sessions', desc: '列出已保存的历史会话' },
+            { cmd: '/resume <sessionId>', desc: '恢复历史会话继续对话' },
+            { cmd: '/snapshot', desc: '查看 Side-Git 快照' },
+            { cmd: '/restore <N>', desc: '恢复到最近第 N 个 pre-turn 快照' },
+            { cmd: '/clear / /compact', desc: '清空对话 / 手动压缩历史' },
+            { cmd: '/export', desc: '导出会话为 Markdown（含完整 system prompt）' },
+          ]
+        },
+        {
+          id: 'ops', label: '运维与其他',
+          rows: [
+            { cmd: '/doctor', desc: '环境体检' },
+            { cmd: '/telemetry', desc: '查看今日遥测摘要（轮次 / token / 成本）' },
+            { cmd: '/task', desc: '查看后台任务' },
+            { cmd: '/skill list|show|on|off|reload', desc: 'Skill 管理' },
+            { cmd: '/config provider <name> ...', desc: '持久化 provider 配置' },
+            { cmd: '/init', desc: '生成项目级记忆 PAI.md' },
+            { cmd: '/exit / /quit', desc: '退出' },
+          ]
+        },
+      ],
+      faqs: [
+        { q: 'API Key 配在哪里？会泄露吗？', a: '复制 .env.example 为 .env 并填入自己的 Key。.env 已被 .gitignore 排除，仓库里只有占位模板；审计日志会对 write_file 正文与 MCP 参数中的密钥做脱敏。' },
+        { q: '为什么 Banner 显示 v16.1.0，Maven 产物却是 1.0-SNAPSHOT？', a: '这是项目已知状态：Banner 版本代表产品形态里程碑，Maven 版本是工程产物号，两者刻意不一致，正常现象。' },
+        { q: '危险操作一定会弹审批吗？', a: '默认 HITL 关闭，需要 /hitl on 启用；启用后危险工具（写入 / 命令 / 回滚 / MCP）都会弹审批。批准过的调用会记入权限记忆，全部放行有次数上限。' },
+        { q: 'Runtime API / 后台任务没有审批面板怎么办？', a: '它们走非交互默认拒绝策略：只读工具放行，execute_command 与 MCP 需通过 YICLI_HEADLESS_COMMAND_ALLOWLIST / YICLI_HEADLESS_MCP_ALLOWLIST 精确白名单。' },
+        { q: 'grep_code 找不到 ripgrep 会怎样？', a: '自动回退 Java 扫描实现，结果一致，只是大仓库下稍慢；建议安装 ripgrep 获得最佳体验。' },
+        { q: '想隔离 execute_command 怎么办？', a: '设置 YICLI_SANDBOX_MODE=docker，命令会通过 docker run 在容器内执行（项目只读挂载 /workspace）；Docker 不可用时自动回退本地并明确提示。' },
+      ],
+    };
+  },
+  methods: {
+    copy(key) {
+      const map = {
+        quickstart: 'cp .env.example .env\nmvn clean package\njava -jar target/yicli-1.0-SNAPSHOT.jar\nyicli doctor',
+        firstrun: '/model glm-5.1\n/doctor\n帮我读 README.md 并总结核心架构\n/hitl on\n/exit',
+        mcp: '{\n  "mcpServers": {\n    "my-server": {\n      "command": "npx",\n      "args": ["-y", "my-mcp-server"],\n      "env": { "TOKEN": "${MY_TOKEN}" }\n    }\n  }\n}',
+        skill: '/skill list\n/skill show web-access\n/skill on my-skill',
+        resume: '/sessions\n/resume session_1722600000000_1',
+      };
+      const text = map[key] || '';
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => this.toast('已复制到剪贴板')).catch(() => this.fallbackCopy(text));
+      } else {
+        this.fallbackCopy(text);
+      }
+    },
+    fallbackCopy(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); this.toast('已复制到剪贴板'); } catch (e) { this.toast('复制失败，请手动复制'); }
+      document.body.removeChild(ta);
+    },
+    toast(msg) {
+      let el = document.getElementById('toast');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'toast';
+        el.style.cssText = 'position:fixed;left:50%;bottom:32px;transform:translateX(-50%);background:#1f6feb;color:#fff;padding:8px 18px;border-radius:8px;font-size:14px;z-index:999;transition:opacity .3s';
+        document.body.appendChild(el);
+      }
+      el.textContent = msg;
+      el.style.opacity = '1';
+      clearTimeout(this._toastTimer);
+      this._toastTimer = setTimeout(() => { el.style.opacity = '0'; }, 1800);
+    },
+    toggleFaq(i) {
+      this.faqOpen[i] = !this.faqOpen[i];
+    },
+  },
+}).mount('#app');
+</script>
+</body>
+</html>

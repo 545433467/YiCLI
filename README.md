@@ -4,6 +4,21 @@
 
 > 项目由 PaiCLI 改名而来；`PaiCLI` / `PaiAgent` / `com.paicli` / `PAICLI_*` 均已统一为 `YiCLI` / `YiAgent` / `com.yicli` / `YICLI_*`。
 
+## 🌐 网页版使用指南
+
+👉 **[打开 YiCLI 使用指南页面](docs/guide/index.html)**（Vue 3 单文件页面，浏览器直接打开即可，无需构建）
+
+页面覆盖：项目整体介绍、核心能力、真实会话演示、快速开始（构建 / 配置 / 运行）、斜杠命令速查（6 个分类 Tab）、安全模型、MCP / Skill / 会话恢复扩展指南与常见问题 FAQ，所有命令块支持一键复制。
+
+```bash
+# 本地预览（任选其一）
+start docs/guide/index.html          # Windows
+open docs/guide/index.html           # macOS
+xdg-open docs/guide/index.html       # Linux
+```
+
+> 页面通过 CDN 加载 Vue 3；离线环境下把 `<script src="https://unpkg.com/vue@3.4.38/...">` 替换为本地 `vue.global.prod.js` 即可。
+
 ## 特性
 
 - **三条执行路径**：ReAct（默认，实时搜索代码）、Plan-and-Execute（`/plan`，DAG 规划后执行）、Multi-Agent（`/team`，Planner/Worker/Reviewer 分工）
