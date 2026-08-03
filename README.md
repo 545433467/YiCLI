@@ -6,24 +6,9 @@
 
 ## 🌐 网页版使用指南
 
-👉 **[在线预览使用指南（htmlpreview，零配置）](https://htmlpreview.github.io/?https://github.com/545433467/YiCLI/blob/main/docs/guide/index.html)**
+👉 **[YiCLI 使用指南](https://htmlpreview.github.io/?https://github.com/545433467/YiCLI/blob/main/docs/guide/index.html)**
 
-> 注意：GitHub 不会渲染仓库里的 `.html` 文件（点击只会显示源码），所以 README 里的链接指向在线预览服务；正式方案是 GitHub Pages，见下。
-
-**推荐：GitHub Pages 托管**。仓库已附带 [.github/workflows/pages.yml](.github/workflows/pages.yml) 自动发布工作流，只需在 GitHub 仓库 **Settings → Pages → Source** 选择 **GitHub Actions**（一次设置），之后每次推送到 `main` 会自动发布到：
-
-👉 **https://545433467.github.io/YiCLI/**
-
-页面覆盖：项目整体介绍、核心能力、真实会话演示、快速开始（构建 / 配置 / 运行）、斜杠命令速查（6 个分类 Tab）、安全模型、MCP / Skill / 会话恢复扩展指南与常见问题 FAQ，所有命令块支持一键复制。页面源码在 [docs/guide/index.html](docs/guide/index.html)（Vue 3 单文件，也可浏览器直接打开本地文件）。
-
-```bash
-# 本地预览（任选其一）
-start docs/guide/index.html          # Windows
-open docs/guide/index.html           # macOS
-xdg-open docs/guide/index.html       # Linux
-```
-
-> 页面通过 CDN 加载 Vue 3；离线环境下把 `<script src="https://unpkg.com/vue@3.4.38/...">` 替换为本地 `vue.global.prod.js` 即可。
+启用 GitHub Pages 后可直接访问 https://545433467.github.io/YiCLI/（自动发布工作流：[.github/workflows/pages.yml](.github/workflows/pages.yml)）。
 
 ## 特性
 
