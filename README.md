@@ -18,7 +18,10 @@
 - **三形态渲染器**：inline 流式 TUI（默认，JLine 底部 dock + 可折叠工具块）/ Lanterna 全屏 / plain 兜底
 - **会话与检查点**：退出自动保存会话（`/sessions`），取消或 LLM 失败自动留检查点（`/resume <id>` 续跑）
 - **LLM 调用重试**：429 / 5xx / 连接错误指数退避重试，尊重 `Retry-After`，流开始后不重试避免重复内容
+- **容器沙箱（opt-in）**：`YICLI_SANDBOX_MODE=docker` 时 `execute_command` 在容器内运行（项目目录只读挂载），Docker 不可用自动回退本地
 - **事件总线**：`YiCliEventBus` 提供 tool_call / turn / app_stop 生命周期事件，作为 hooks 与可观测性的基础
+- **可观测性**：turn/tool 结构化 span 按天写入 `~/.yicli/telemetry/`，`/telemetry` 查看 token 与成本摘要
+- **MCP 自愈**：stdio server 进程崩溃后按指数退避自动重启（`YICLI_MCP_AUTO_RESTART`，默认开启）
 - **Runtime API + 后台任务**：`serve --http` 提供本地 REST 接口，SQLite 持久化任务队列
 - **微信 iLink 通道**：扫码绑定，文本消息收发，非交互式默认拒绝策略
 - **体检与 eval**：`yicli doctor` 一键检查环境；prompt golden 快照 + LLM 录制/回放支撑回归评测
@@ -142,10 +145,10 @@ mvn test -Dtest=PromptGoldenTest -Dyicli.golden.update=true -DskipTests=false
 
 ## 已知边界
 
-以下能力在路线图中但尚未交付：容器/VM 沙箱执行器、MCP OAuth + sampling、MCP server 自动重启、插件 API、OpenTelemetry 导出。不要把路线图误读为已交付。
+以下能力在路线图中但尚未交付：MCP OAuth + sampling、代码级插件 API、OpenTelemetry 协议导出（当前为 JSONL 遥测）。容器沙箱（opt-in Docker）与 MCP server 自动重启已交付。不要把路线图误读为已交付。
 
 ## 演进历史（摘要）
 
 已交付 23 期：ReAct → Plan+DAG → Memory → RAG → Multi-Agent → HITL → 并行工具 → 多模型 → 联网 → MCP 核心 → MCP 高级 → 长上下文 → Chrome DevTools → CDP 会话复用 → Skill → TUI → LSP 诊断 → Side-Git 快照 → Prompt 分层 → Runtime API → 图片输入 → 微信 iLink 通道文本 MVP。
 
-产品化重构（P0/P1）已交付：LLM 调用重试网关、装配层拆分与工具目录动态注入、事件总线、共享线程池、会话管理 `/sessions` `/resume`、Agent 检查点、`task` 子代理工具、权限记忆、类型化配置中心 + `doctor`、prompt golden + 录制/回放 eval 框架。
+产品化重构（P0/P1）与 P2 增强已交付：LLM 调用重试网关、装配层拆分与工具目录动态注入、事件总线、共享线程池、会话管理 `/sessions` `/resume`、Agent 检查点、`task` 子代理工具、权限记忆、类型化配置中心 + `doctor`、prompt golden + 录制/回放 eval 框架、Docker 沙箱执行器（opt-in）、turn/tool 遥测与 `/telemetry`、MCP server 自动重启。

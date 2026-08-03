@@ -50,7 +50,8 @@ final class CliCommandParser {
         RESUME,
         PERMISSION,
         PERMISSION_CLEAR,
-        DOCTOR
+        DOCTOR,
+        TELEMETRY
     }
 
     record ParsedCommand(CommandType type, String payload) {
@@ -305,6 +306,10 @@ final class CliCommandParser {
 
         if (trimmed.equalsIgnoreCase("/doctor")) {
             return new ParsedCommand(CommandType.DOCTOR, null);
+        }
+
+        if (trimmed.equalsIgnoreCase("/telemetry")) {
+            return new ParsedCommand(CommandType.TELEMETRY, null);
         }
 
         if (trimmed.equalsIgnoreCase("/mcp")) {

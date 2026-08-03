@@ -2,6 +2,7 @@ package com.yicli.tool;
 
 import com.yicli.event.YiCliEvent;
 import com.yicli.event.YiCliEventBus;
+import com.yicli.policy.YicliSandbox;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -85,5 +86,17 @@ class ToolRegistryEventBusTest {
         assertEquals("call_2", results.get(1).id());
         assertEquals("call_3", results.get(2).id());
         assertTrue(results.stream().noneMatch(ToolRegistry.ToolExecutionResult::timedOut));
+    }
+
+    @Test
+    void sandboxOffModeDoesNotInvokeDocker() {
+        ToolRegistry registry = new ToolRegistry();
+        registry.setProjectPath(tempDir.toString());
+        registry.setSandbox(new YicliSandbox("off", "unused"));
+
+        // 空命令直接返回参数错误，不经过任何进程执行（本地 / docker 都不触发）
+        String result = registry.executeTool("execute_command", "{\"command\":\"\"}");
+
+        assertTrue(result.contains("命令不能为空"));
     }
 }

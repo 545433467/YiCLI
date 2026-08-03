@@ -53,6 +53,7 @@ import com.yicli.snapshot.RestoreResult;
 import com.yicli.snapshot.SnapshotService;
 import com.yicli.snapshot.TurnSnapshot;
 import com.yicli.skill.SkillRegistry;
+import com.yicli.telemetry.TurnTelemetry;
 import com.yicli.tool.ToolRegistry;
 import com.yicli.util.AnsiStyle;
 import com.yicli.wechat.IlinkClient;
@@ -332,6 +333,12 @@ public class Main {
             YiCliEventBus eventBus = new YiCliEventBus();
             reactAgent.setEventBus(eventBus);
             reactAgent.getToolRegistry().setEventBus(eventBus);
+            TurnTelemetry telemetry = new TurnTelemetry();
+            eventBus.subscribe("tool_call_started", telemetry::onEvent);
+            eventBus.subscribe("tool_call_completed", telemetry::onEvent);
+            eventBus.subscribe("tool_call_failed", telemetry::onEvent);
+            eventBus.subscribe("turn_started", telemetry::onEvent);
+            eventBus.subscribe("turn_ended", telemetry::onEvent);
             SessionManager sessionManager = new SessionManager();
             reactAgent.setSessionCheckpointer((history, title) -> sessionManager.save(history, title));
             PermissionStore permissionStore = new PermissionStore();
@@ -783,6 +790,10 @@ public class Main {
                     }
                     case DOCTOR -> {
                         ui.println(YiCliDoctor.report());
+                        continue;
+                    }
+                    case TELEMETRY -> {
+                        ui.println(telemetry.todaySummary());
                         continue;
                     }
                     case INDEX_CODE -> {
@@ -1671,6 +1682,7 @@ public class Main {
                 new SlashCommandHint("/permission", "/permission", "查看已记住的权限规则"),
                 new SlashCommandHint("/permission clear", "/permission clear", "清空权限记忆"),
                 new SlashCommandHint("/doctor", "/doctor", "环境体检：Java/ripgrep/API Key/配置目录"),
+                new SlashCommandHint("/telemetry", "/telemetry", "查看今日遥测摘要（轮次/token/成本）"),
                 new SlashCommandHint("/exit", "/exit", "退出 YiCLI"),
                 new SlashCommandHint("/quit", "/quit", "退出 YiCLI")
         );

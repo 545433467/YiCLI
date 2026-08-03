@@ -260,7 +260,7 @@
 **不做（明确边界）**：
 - OAuth 2.0 Authorization Code + PKCE
 - `sampling/createMessage`
-- MCP server 自动重启
+- ~~MCP server 自动重启~~（已交付：stdio server 崩溃后按指数退避自动拉起，`YICLI_MCP_AUTO_RESTART` 默认开启，见 P2-3）
 - prompts 加载到对话流（仅保留 `/mcp prompts` 查看 server 暴露的模板）
 - resources 自动注入 system prompt（第 12 期长上下文模式已接入 URI / 描述索引）
 - server health ping / heartbeat

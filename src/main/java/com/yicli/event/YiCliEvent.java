@@ -12,7 +12,10 @@ public record YiCliEvent(
         String toolArgs,
         String result,
         boolean succeeded,
-        Instant timestamp
+        Instant timestamp,
+        int inputTokens,
+        int outputTokens,
+        int cachedInputTokens
 ) {
     public static final String TOOL_CALL_STARTED = "tool_call_started";
     public static final String TOOL_CALL_COMPLETED = "tool_call_completed";
@@ -22,16 +25,21 @@ public record YiCliEvent(
     public static final String APP_STOP = "app_stop";
 
     public static YiCliEvent toolStarted(String toolName, String toolArgs) {
-        return new YiCliEvent(TOOL_CALL_STARTED, toolName, toolArgs, null, true, Instant.now());
+        return new YiCliEvent(TOOL_CALL_STARTED, toolName, toolArgs, null, true, Instant.now(), 0, 0, 0);
     }
 
     public static YiCliEvent toolFinished(String toolName, String toolArgs, String result, boolean succeeded) {
         return new YiCliEvent(
                 succeeded ? TOOL_CALL_COMPLETED : TOOL_CALL_FAILED,
-                toolName, toolArgs, result, succeeded, Instant.now());
+                toolName, toolArgs, result, succeeded, Instant.now(), 0, 0, 0);
     }
 
     public static YiCliEvent plain(String type) {
-        return new YiCliEvent(type, null, null, null, true, Instant.now());
+        return new YiCliEvent(type, null, null, null, true, Instant.now(), 0, 0, 0);
+    }
+
+    public static YiCliEvent turnEnded(int inputTokens, int outputTokens, int cachedInputTokens) {
+        return new YiCliEvent(TURN_ENDED, null, null, null, true, Instant.now(),
+                inputTokens, outputTokens, cachedInputTokens);
     }
 }

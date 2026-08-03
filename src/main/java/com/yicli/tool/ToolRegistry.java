@@ -54,6 +54,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import com.yicli.event.YiCliEvent;
 import com.yicli.event.YiCliEventBus;
+import com.yicli.policy.YicliSandbox;
 
 /**
  * 工具注册表 - 管理所有可用工具
@@ -108,6 +109,7 @@ public class ToolRegistry {
     private volatile String currentProvider = "";
     private volatile String currentModel = "";
     private volatile YiCliEventBus eventBus;
+    private volatile YicliSandbox sandbox = YicliSandbox.fromEnv();
     private volatile Function<String, String> subAgentRunner;
     // 子代理嵌套深度保护：task 工具最多嵌套 2 层，防止模型无意识递归派发
     private static final int MAX_TASK_TOOL_DEPTH = 2;
@@ -152,6 +154,10 @@ public class ToolRegistry {
      */
     public void setSubAgentRunner(Function<String, String> subAgentRunner) {
         this.subAgentRunner = subAgentRunner;
+    }
+
+    public void setSandbox(YicliSandbox sandbox) {
+        this.sandbox = sandbox == null ? new YicliSandbox("off", null) : sandbox;
     }
 
     /** 关闭共享线程池；仅在进程退出或显式关闭 registry 时调用。 */
@@ -1368,6 +1374,18 @@ public class ToolRegistry {
             throw new PolicyException(denyReason);
         }
 
+        if (sandbox.enabled()) {
+            String sandboxResult = sandbox.run(projectPath, normalized, commandTimeoutSeconds);
+            if (sandboxResult.startsWith("沙箱执行失败") || sandboxResult.startsWith("沙箱命令执行超时")) {
+                return "⚠️ 沙箱不可用，已回退本地执行。沙箱反馈: " + sandboxResult + "\n"
+                        + executeLocalCommand(normalized);
+            }
+            return sandboxResult;
+        }
+        return executeLocalCommand(normalized);
+    }
+
+    private String executeLocalCommand(String normalized) {
         ExecutorService outputReaderExecutor = Executors.newSingleThreadExecutor(r -> {
             Thread thread = new Thread(r, "yicli-command-output");
             thread.setDaemon(true);

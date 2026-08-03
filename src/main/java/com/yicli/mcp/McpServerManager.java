@@ -8,6 +8,7 @@ import com.yicli.mcp.resources.McpResourceCache;
 import com.yicli.mcp.resources.McpResourceContent;
 import com.yicli.mcp.resources.McpResourceDescriptor;
 import com.yicli.mcp.resources.McpResourceTool;
+import com.yicli.config.YiCliEnv;
 import com.yicli.policy.AuditLog;
 import com.yicli.mcp.transport.McpTransport;
 import com.yicli.mcp.transport.StdioTransport;
@@ -42,6 +43,9 @@ public class McpServerManager implements AutoCloseable {
     private final McpConfigLoader configLoader;
     private final Map<String, McpServer> servers = new ConcurrentHashMap<>();
     private final McpResourceCache resourceCache = new McpResourceCache();
+    private final Map<String, Integer> restartAttempts = new ConcurrentHashMap<>();
+    private volatile Thread autoRestartThread;
+    private final boolean autoRestartEnabled = YiCliEnv.getBool(YiCliEnv.MCP_AUTO_RESTART);
 
     public McpServerManager(ToolRegistry toolRegistry, Path projectDir) {
         this(toolRegistry, projectDir, new McpConfigLoader(projectDir));
@@ -118,6 +122,69 @@ public class McpServerManager implements AutoCloseable {
             }
             executor.shutdown();
         }
+        startAutoRestartMonitor();
+    }
+
+    /**
+     * 启动自动重启监控（daemon 线程）：对已 READY 的 stdio server，
+     * 若其进程意外退出则按指数退避自动拉起。HTTP server 无本地进程，跳过。
+     */
+    private void startAutoRestartMonitor() {
+        if (!autoRestartEnabled || autoRestartThread != null) {
+            return;
+        }
+        autoRestartThread = new Thread(this::autoRestartLoop, "yicli-mcp-auto-restart");
+        autoRestartThread.setDaemon(true);
+        autoRestartThread.start();
+    }
+
+    private void autoRestartLoop() {
+        while (!Thread.currentThread().isInterrupted()) {
+            try {
+                Thread.sleep(3_000);
+            } catch (InterruptedException e) {
+                return;
+            }
+            for (McpServer server : servers.values()) {
+                if (!shouldAutoRestart(server)) {
+                    restartAttempts.remove(server.name());
+                    continue;
+                }
+                if (serverProcessAlive(server)) {
+                    restartAttempts.remove(server.name());
+                    continue;
+                }
+                int attempt = restartAttempts.merge(server.name(), 1, Integer::sum);
+                server.errorMessage("进程退出，准备自动重启（第 " + attempt + " 次）");
+                try {
+                    Thread.sleep(AutoRestartPolicy.nextDelayMs(attempt));
+                } catch (InterruptedException e) {
+                    return;
+                }
+                if (Thread.currentThread().isInterrupted()) {
+                    return;
+                }
+                start(server);
+                if (server.status() == McpServerStatus.READY) {
+                    restartAttempts.remove(server.name());
+                }
+            }
+        }
+    }
+
+    private boolean shouldAutoRestart(McpServer server) {
+        return autoRestartEnabled
+                && server.status() == McpServerStatus.READY
+                && server.transportName() != null
+                && server.transportName().toLowerCase().contains("stdio");
+    }
+
+    private boolean serverProcessAlive(McpServer server) {
+        Long pid = server.processId();
+        if (pid == null || pid <= 0) {
+            return true;  // 拿不到 pid（如 HTTP transport）不视为进程退出
+        }
+        return ProcessHandle.of(pid).map(ProcessHandle::isAlive).orElse(false);
     }
 
     private void printStartupTimeout(List<McpServer> targets, PrintStream out, Duration maxWait) {
@@ -560,6 +627,10 @@ public class McpServerManager implements AutoCloseable {
 
     @Override
     public void close() {
+        if (autoRestartThread != null) {
+            autoRestartThread.interrupt();
+            autoRestartThread = null;
+        }
         for (McpServer server : servers.values()) {
             unregisterTools(server);
             server.close();

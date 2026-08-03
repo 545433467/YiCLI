@@ -233,7 +233,7 @@ src/main/java/com/yicli/
 
 ## 当前已知边界
 
-以下在路线图但未交付：容器/VM 沙箱 / MCP OAuth + sampling + server 自动重启
+以下在路线图但未交付：MCP OAuth + sampling / 代码级插件 API / OpenTelemetry 协议导出。Docker 沙箱执行器（`YICLI_SANDBOX_MODE=docker`，opt-in）、MCP server 自动重启（`YICLI_MCP_AUTO_RESTART`，默认开）、turn/tool 遥测（`~/.yicli/telemetry/`，`/telemetry` 查看）已交付。
 
 不要把 `ROADMAP.md` 中"将来要做"误读成"现在已有"。
 

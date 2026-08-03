@@ -171,6 +171,13 @@ class CliCommandParserTest {
     }
 
     @Test
+    void parsesTelemetryCommand() {
+        CliCommandParser.ParsedCommand command = CliCommandParser.parse("/telemetry");
+
+        assertEquals(CliCommandParser.CommandType.TELEMETRY, command.type());
+    }
+
+    @Test
     void redactsApiKeyInSubmittedInput() {
         String redacted = Main.redactSensitiveInput(
                 "/config provider freellmapi --api-key sk-secret --model auto");

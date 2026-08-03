@@ -286,7 +286,7 @@ public class Agent {
             }
         }
         } finally {
-            publishTurnEnded();
+            publishTurnEnded(budget.totalInputTokens(), budget.totalOutputTokens(), budget.totalCachedInputTokens());
         }
     }
 
@@ -296,9 +296,9 @@ public class Agent {
         }
     }
 
-    private void publishTurnEnded() {
+    private void publishTurnEnded(int inputTokens, int outputTokens, int cachedInputTokens) {
         if (eventBus != null) {
-            eventBus.publish(YiCliEvent.plain(YiCliEvent.TURN_ENDED));
+            eventBus.publish(YiCliEvent.turnEnded(inputTokens, outputTokens, cachedInputTokens));
         }
     }
 

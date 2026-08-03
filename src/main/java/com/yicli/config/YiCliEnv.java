@@ -41,11 +41,24 @@ public final class YiCliEnv {
     public static final Key NO_STATUSBAR = new Key(
             "noStatusbar", "YICLI_NO_STATUSBAR", "yicli.no.statusbar",
             "inline 模式禁用底部 dock", "false");
+    public static final Key SANDBOX_MODE = new Key(
+            "sandboxMode", "YICLI_SANDBOX_MODE", "yicli.sandbox.mode",
+            "execute_command 沙箱模式: off | docker（默认 off）", "off");
+    public static final Key SANDBOX_IMAGE = new Key(
+            "sandboxImage", "YICLI_SANDBOX_IMAGE", "yicli.sandbox.image",
+            "docker 沙箱镜像（默认含 JDK17，便于编译/测试）", "eclipse-temurin:17-jdk");
+    public static final Key TELEMETRY_ENABLED = new Key(
+            "telemetryEnabled", "YICLI_TELEMETRY_ENABLED", "yicli.telemetry.enabled",
+            "turn/tool 遥测 JSONL 落盘开关", "true");
+    public static final Key MCP_AUTO_RESTART = new Key(
+            "mcpAutoRestart", "YICLI_MCP_AUTO_RESTART", "yicli.mcp.auto.restart",
+            "MCP server 进程崩溃后自动重启", "true");
 
     public static final List<Key> ALL = List.of(
             RENDERER, LOG_LEVEL, LOG_DIR, LSP_ENABLED, LSP_MAX_DIAGNOSTICS,
             SNAPSHOT_ENABLED, MCP_STARTUP_WAIT_SECONDS,
-            LLM_RETRY_MAX_ATTEMPTS, LLM_RETRY_BACKOFF_SECONDS, NO_STATUSBAR
+            LLM_RETRY_MAX_ATTEMPTS, LLM_RETRY_BACKOFF_SECONDS, NO_STATUSBAR,
+            SANDBOX_MODE, SANDBOX_IMAGE, TELEMETRY_ENABLED, MCP_AUTO_RESTART
     );
 
     private YiCliEnv() {
