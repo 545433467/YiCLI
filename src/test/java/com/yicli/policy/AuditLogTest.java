@@ -19,6 +19,36 @@ import static org.junit.jupiter.api.Assertions.*;
 class AuditLogTest {
 
     @Test
+    void writeFileArgsAreRedactedToPathAndLengthSummary() {
+        String redacted = AuditLog.redactArgs("write_file",
+                "{\"path\":\"secret.txt\",\"content\":\"password=abc123\\nBEGIN PRIVATE KEY...\"}");
+
+        assertTrue(redacted.contains("\"path\":\"secret.txt\""), redacted);
+        assertTrue(redacted.contains("content 已脱敏"), redacted);
+        assertFalse(redacted.contains("password=abc123"));
+        assertFalse(redacted.contains("BEGIN PRIVATE KEY"));
+    }
+
+    @Test
+    void mcpArgsAreStructurallyMasked() {
+        String redacted = AuditLog.redactArgs("mcp__github__create_issue",
+                "{\"token\":\"sk-secret123\",\"title\":\"hello\",\"headers\":{\"Authorization\":\"Bearer abc\"}}");
+
+        assertTrue(redacted.contains("\"token\":\"***\""), redacted);
+        assertTrue(redacted.contains("\"Authorization\":\"***\""), redacted);
+        assertFalse(redacted.contains("sk-secret123"));
+        assertFalse(redacted.contains("Bearer abc"));
+        assertTrue(redacted.contains("\"title\":\"hello\""), "非敏感字段应保留");
+    }
+
+    @Test
+    void regularToolArgsKeepCommandText() {
+        String redacted = AuditLog.redactArgs("execute_command", "{\"command\":\"mvn test\"}");
+
+        assertTrue(redacted.contains("mvn test"));
+    }
+
+    @Test
     void writesEntryAsJsonLineToTodayFile(@TempDir Path tempDir) throws Exception {
         AuditLog log = new AuditLog(tempDir);
         log.record(AuditLog.AuditEntry.allow("write_file", "{\"path\":\"a.txt\"}", 12));

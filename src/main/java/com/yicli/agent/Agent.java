@@ -62,6 +62,7 @@ public class Agent {
     private volatile YiCliEventBus eventBus;
     private volatile SessionCheckpointer sessionCheckpointer;
     private volatile String lastCheckpointId;
+    private volatile String activeUserInput = "";
 
     /** 检查点保存器：把当前 ReAct 历史落盘，返回会话 ID（供 /resume 使用）。 */
     @FunctionalInterface
@@ -150,6 +151,7 @@ public class Agent {
      */
     public String run(String userInput) {
         log.info("ReAct run started: inputLength={}", userInput == null ? 0 : userInput.length());
+        this.activeUserInput = userInput == null ? "" : userInput;
         pruneHistoricalImagePayloads();
         // 存入短期记忆
         memoryManager.addUserMessage(userInput);
@@ -753,6 +755,7 @@ public class Agent {
     }
 
     private List<ToolExecutionResult> executeToolCalls(List<LlmClient.ToolCall> toolCalls, int iteration) {
+        toolRegistry.setCallerContextForNextBatch("用户目标: " + preview(activeUserInput, 80));
         List<ToolInvocation> invocations = new ArrayList<>();
         for (LlmClient.ToolCall toolCall : toolCalls) {
             String toolName = toolCall.function().name();

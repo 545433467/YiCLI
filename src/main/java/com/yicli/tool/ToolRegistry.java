@@ -114,6 +114,9 @@ public class ToolRegistry {
     // 子代理嵌套深度保护：task 工具最多嵌套 2 层，防止模型无意识递归派发
     private static final int MAX_TASK_TOOL_DEPTH = 2;
     private final ThreadLocal<Integer> taskToolDepth = ThreadLocal.withInitial(() -> 0);
+    // 本轮工具调用的调用方上下文（供 HITL 审批框展示"为什么调用"）
+    private volatile String pendingCallerContext;
+    private final ThreadLocal<String> callerContextHolder = new ThreadLocal<>();
 
     public ToolRegistry() {
         this(DEFAULT_COMMAND_TIMEOUT_SECONDS, DEFAULT_TOOL_BATCH_TIMEOUT_SECONDS);
@@ -158,6 +161,16 @@ public class ToolRegistry {
 
     public void setSandbox(YicliSandbox sandbox) {
         this.sandbox = sandbox == null ? new YicliSandbox("off", null) : sandbox;
+    }
+
+    /** 为下一批工具调用设置调用方上下文（Agent 在批量执行前调用）。 */
+    public void setCallerContextForNextBatch(String context) {
+        this.pendingCallerContext = context;
+    }
+
+    /** 当前线程正在执行的工具调用的来源上下文（HITL 审批使用）。 */
+    public String currentCallerContext() {
+        return callerContextHolder.get();
     }
 
     /** 关闭共享线程池；仅在进程退出或显式关闭 registry 时调用。 */
@@ -1211,7 +1224,8 @@ public class ToolRegistry {
                     browserGuard.applyAfterExecution(name, argumentsJson, output.text());
                 }
                 if (shouldAudit) {
-                    auditLog.record(AuditLog.AuditEntry.allow(name, argumentsJson, elapsedMillis(start), auditMetadata));
+                    auditLog.record(AuditLog.AuditEntry.allow(name,
+                            AuditLog.redactArgs(name, argumentsJson), elapsedMillis(start), auditMetadata));
                 }
                 return finishToolEvent(name, argumentsJson, output, true);
             }
@@ -1222,20 +1236,23 @@ public class ToolRegistry {
                     argMap.put(entry.getKey(), entry.getValue().asText()));
             String result = tool.executor().execute(argMap);
             if (shouldAudit) {
-                auditLog.record(AuditLog.AuditEntry.allow(name, argumentsJson, elapsedMillis(start), auditMetadata));
+                auditLog.record(AuditLog.AuditEntry.allow(name,
+                        AuditLog.redactArgs(name, argumentsJson), elapsedMillis(start), auditMetadata));
             }
             return finishToolEvent(name, argumentsJson, ToolOutput.text(result), true);
         } catch (PolicyException e) {
             if (shouldAudit) {
                 auditLog.record(AuditLog.AuditEntry.denyByPolicy(
-                        name, argumentsJson, e.getMessage(), elapsedMillis(start), auditMetadata));
+                        name, AuditLog.redactArgs(name, argumentsJson),
+                        e.getMessage(), elapsedMillis(start), auditMetadata));
             }
             return finishToolEvent(name, argumentsJson,
                     ToolOutput.text("🛡️ 策略拒绝: " + e.getMessage()), false);
         } catch (Exception e) {
             if (shouldAudit) {
                 auditLog.record(AuditLog.AuditEntry.error(
-                        name, argumentsJson, e.getMessage(), elapsedMillis(start), auditMetadata));
+                        name, AuditLog.redactArgs(name, argumentsJson),
+                        e.getMessage(), elapsedMillis(start), auditMetadata));
             }
             return finishToolEvent(name, argumentsJson,
                     ToolOutput.text("工具执行失败: " + e.getMessage()), false);
@@ -1293,7 +1310,13 @@ public class ToolRegistry {
         if (invocations.size() == 1) {
             ToolInvocation invocation = invocations.get(0);
             long startedAt = System.nanoTime();
-            ToolOutput output = executeToolOutput(invocation.name(), invocation.argumentsJson());
+            callerContextHolder.set(pendingCallerContext);
+            ToolOutput output;
+            try {
+                output = executeToolOutput(invocation.name(), invocation.argumentsJson());
+            } finally {
+                callerContextHolder.remove();
+            }
             return List.of(ToolExecutionResult.completed(invocation, output, elapsedMillis(startedAt)));
         }
 
@@ -1304,7 +1327,13 @@ public class ToolRegistry {
                             return ToolExecutionResult.failed(invocation, "用户取消了此次工具调用");
                         }
                         long startedAt = System.nanoTime();
-                        ToolOutput output = executeToolOutput(invocation.name(), invocation.argumentsJson());
+                        callerContextHolder.set(pendingCallerContext);
+                        ToolOutput output;
+                        try {
+                            output = executeToolOutput(invocation.name(), invocation.argumentsJson());
+                        } finally {
+                            callerContextHolder.remove();
+                        }
                         return ToolExecutionResult.completed(invocation, output, elapsedMillis(startedAt));
                     })
                     .toList();

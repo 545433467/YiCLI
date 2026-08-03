@@ -38,6 +38,8 @@ import com.yicli.plan.ExecutionPlan;
 import com.yicli.rag.CodeIndex;
 import com.yicli.hitl.ApprovalPolicy;
 import com.yicli.policy.AuditLog;
+import com.yicli.policy.HeadlessPolicyDecider;
+import com.yicli.policy.HeadlessToolRegistry;
 import com.yicli.policy.PermissionStore;
 import com.yicli.rag.CodeRetriever;
 import com.yicli.rag.CodeRelation;
@@ -989,7 +991,7 @@ public class Main {
     }
 
     private static String runHeadlessTask(String prompt, LlmClient llmClient) {
-        ToolRegistry registry = new ToolRegistry();
+        ToolRegistry registry = new HeadlessToolRegistry(new HeadlessPolicyDecider());
         registry.setProjectPath(Path.of(".").toAbsolutePath().normalize().toString());
         Agent agent = new Agent(llmClient, registry);
         return agent.run(prompt);

@@ -139,6 +139,8 @@ src/main/java/com/yicli/
 - PathGuard 强制路径限定在项目根内
 - CommandGuard 是辅助黑名单，不是主防线
 - 微信 iLink 通道没有人工审批面板，必须走非交互式默认拒绝策略：只读工具默认允许，`execute_command` 必须精确命中命令白名单，`mcp__*` 必须命中 MCP 白名单，`revert_turn` 和浏览器会话切换默认拒绝，文件写入仍由 PathGuard 限定在绑定 workspace 内。
+- Runtime API / 后台任务同样没有人工审批面板，走 `HeadlessPolicyDecider` 非交互默认拒绝：只读放行，write_file 拒绝敏感文件（`.env` / `.git/` / `*.pem` / `id_rsa` / 云凭据等）与密钥内容，`execute_command` / `mcp__*` 需 `YICLI_HEADLESS_COMMAND_ALLOWLIST` / `YICLI_HEADLESS_MCP_ALLOWLIST` 精确白名单。
+- HITL 审批框做 ANSI/控制字符清洗（防终端注入）；审计对 write_file 脱敏 content、对 MCP 参数按字段名掩码；"全部放行"有次数上限（`YICLI_HITL_APPROVE_ALL_LIMIT`，默认 10）；审批可配超时（`YICLI_HITL_TIMEOUT_SECONDS`，默认不限，超时自动拒绝）。
 
 ### Plan 审阅交互
 

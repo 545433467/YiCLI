@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -35,6 +36,7 @@ public class TerminalHitlHandler implements HitlHandler {
     // 本次会话中已批准"全部放行"的集合（并发安全）
     private final Set<String> approvedAllByTool = ConcurrentHashMap.newKeySet();
     private final Set<String> approvedAllByServer = ConcurrentHashMap.newKeySet();
+    private final Map<String, Integer> approveAllRemaining = new ConcurrentHashMap<>();
 
     private final BufferedReader in;
     private final PrintStream out;
@@ -72,12 +74,22 @@ public class TerminalHitlHandler implements HitlHandler {
         String mcpServer = ApprovalPolicy.mcpServerName(request.toolName());
         boolean sensitivePerCall = request.sensitiveNotice() != null && !request.sensitiveNotice().isBlank();
         if (!sensitivePerCall && isApprovedAllByTool(request.toolName())) {
-            out.println("  [HITL] " + request.toolName() + " 已在本次会话中全部放行，自动通过");
-            return ApprovalResult.approveAll();
+            if (consumeApproveAll(request.toolName())) {
+                out.println("  [HITL] " + request.toolName() + " 已全部放行（剩余 "
+                        + remaining(request.toolName()) + " 次），自动通过");
+                return ApprovalResult.approveAll();
+            } else {
+                out.println("  [HITL] " + request.toolName() + " 的全部放行额度已用完，后续操作将重新审批");
+            }
         }
         if (!sensitivePerCall && isApprovedAllByServer(mcpServer)) {
-            out.println("  [HITL] MCP server " + mcpServer + " 已在本次会话中全部放行，自动通过");
-            return ApprovalResult.approveAllByServer();
+            if (consumeApproveAll(mcpServer)) {
+                out.println("  [HITL] MCP server " + mcpServer + " 已全部放行（剩余 "
+                        + remaining(mcpServer) + " 次），自动通过");
+                return ApprovalResult.approveAllByServer();
+            } else {
+                out.println("  [HITL] MCP server " + mcpServer + " 的全部放行额度已用完，后续操作将重新审批");
+            }
         }
 
         // 显著的视觉分隔符，避免审批框被误认为属于上游的"回复"区
@@ -166,7 +178,8 @@ public class TerminalHitlHandler implements HitlHandler {
         String mcpServer = ApprovalPolicy.mcpServerName(request.toolName());
         if (mcpServer == null || mcpServer.isBlank()) {
             approvedAllByTool.add(request.toolName());
-            out.println("  已批准，后续 " + request.toolName() + " 操作将自动通过");
+            approveAllRemaining.put(request.toolName(), approveAllLimit());
+            out.println("  已批准，后续 " + request.toolName() + " 最多 " + approveAllLimit() + " 次操作自动通过");
             return ApprovalResult.approveAll();
         }
 
@@ -185,12 +198,37 @@ public class TerminalHitlHandler implements HitlHandler {
         String normalized = scope == null ? "" : scope.trim().toLowerCase();
         if ("server".equals(normalized) || "s".equals(normalized)) {
             approvedAllByServer.add(mcpServer);
-            out.println("  已批准，后续 MCP server " + mcpServer + " 的工具调用将自动通过");
+            approveAllRemaining.put(mcpServer, approveAllLimit());
+            out.println("  已批准，后续 MCP server " + mcpServer + " 最多 " + approveAllLimit() + " 次调用自动通过");
             return ApprovalResult.approveAllByServer();
         }
         approvedAllByTool.add(request.toolName());
-        out.println("  已批准，后续 " + request.toolName() + " 操作将自动通过");
+        approveAllRemaining.put(request.toolName(), approveAllLimit());
+        out.println("  已批准，后续 " + request.toolName() + " 最多 " + approveAllLimit() + " 次操作自动通过");
         return ApprovalResult.approveAll();
+    }
+
+    private int remaining(String key) {
+        Integer left = approveAllRemaining.get(key);
+        return left == null ? approveAllLimit() : left;
+    }
+
+    /**
+     * 消耗一次全部放行额度；返回 false 表示额度用尽（调用方应提示并移除集合）。
+     */
+    private boolean consumeApproveAll(String key) {
+        Integer left = approveAllRemaining.get(key);
+        if (left == null) {
+            return true;  // 兼容旧状态：无计数则不限制
+        }
+        if (left <= 1) {
+            approveAllRemaining.remove(key);
+            approvedAllByTool.remove(key);
+            approvedAllByServer.remove(key);
+            return false;
+        }
+        approveAllRemaining.put(key, left - 1);
+        return true;
     }
 
     /**
@@ -231,6 +269,7 @@ public class TerminalHitlHandler implements HitlHandler {
     public void clearApprovedAll() {
         approvedAllByTool.clear();
         approvedAllByServer.clear();
+        approveAllRemaining.clear();
     }
 
     @Override
@@ -248,5 +287,20 @@ public class TerminalHitlHandler implements HitlHandler {
     @Override
     public boolean isApprovedAllByServer(String serverName) {
         return serverName != null && approvedAllByServer.contains(serverName);
+    }
+
+    static int approveAllLimit() {
+        String raw = System.getProperty("yicli.hitl.approve.all.limit");
+        if (raw == null || raw.isBlank()) {
+            raw = System.getenv("YICLI_HITL_APPROVE_ALL_LIMIT");
+        }
+        if (raw != null && !raw.isBlank()) {
+            try {
+                return Math.max(1, Integer.parseInt(raw.trim()));
+            } catch (NumberFormatException ignored) {
+                // 回退默认值
+            }
+        }
+        return 10;
     }
 }

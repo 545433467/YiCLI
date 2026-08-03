@@ -2,15 +2,23 @@ package com.yicli.wechat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.yicli.policy.SensitiveFileRules;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Locale;
 
 public class WechatPolicyDecider {
     private static final ObjectMapper MAPPER = new ObjectMapper();
+
     private final WechatPolicyConfig config;
+    private final int maxWritesPerMinute;
+    private final Deque<Long> writeTimestamps = new ArrayDeque<>();
+    private final Object writeLock = new Object();
 
     public WechatPolicyDecider(WechatPolicyConfig config) {
         this.config = config;
+        this.maxWritesPerMinute = maxWritesPerMinute();
     }
 
     public WechatPolicyDecision decide(String toolName, String argumentsJson) {
@@ -24,7 +32,10 @@ public class WechatPolicyDecider {
         if ("execute_command".equals(name)) {
             return commandAllowed(argumentsJson);
         }
-        if ("write_file".equals(name) || "create_project".equals(name)) {
+        if ("write_file".equals(name)) {
+            return writeFileAllowed(argumentsJson);
+        }
+        if ("create_project".equals(name)) {
             return WechatPolicyDecision.allow();
         }
         if ("revert_turn".equals(name)) {
@@ -51,6 +62,47 @@ public class WechatPolicyDecider {
             }
         }
         return WechatPolicyDecision.deny("微信通道默认拒绝 execute_command；请在 setup 策略中配置命令白名单后重试");
+    }
+
+    private WechatPolicyDecision writeFileAllowed(String argumentsJson) {
+        String path = extract(argumentsJson, "path");
+        if (path.isBlank()) {
+            return WechatPolicyDecision.deny("微信通道拒绝空路径写入");
+        }
+        if (SensitiveFileRules.isSensitivePath(path)) {
+            return WechatPolicyDecision.deny("微信通道拒绝写入敏感文件: " + path);
+        }
+        String content = extract(argumentsJson, "content");
+        if (SensitiveFileRules.containsSecret(content)) {
+            return WechatPolicyDecision.deny("微信通道拒绝写入疑似密钥/凭据内容");
+        }
+        synchronized (writeLock) {
+            long now = System.currentTimeMillis();
+            while (!writeTimestamps.isEmpty() && now - writeTimestamps.peekFirst() > 60_000L) {
+                writeTimestamps.pollFirst();
+            }
+            if (writeTimestamps.size() >= maxWritesPerMinute) {
+                return WechatPolicyDecision.deny(
+                        "微信通道写入频率超限（每分钟最多 " + maxWritesPerMinute + " 次）");
+            }
+            writeTimestamps.addLast(now);
+        }
+        return WechatPolicyDecision.allow();
+    }
+
+    private static int maxWritesPerMinute() {
+        String raw = System.getProperty("yicli.wechat.write.per.minute");
+        if (raw == null || raw.isBlank()) {
+            raw = System.getenv("YICLI_WECHAT_WRITE_PER_MINUTE");
+        }
+        if (raw != null && !raw.isBlank()) {
+            try {
+                return Math.max(1, Integer.parseInt(raw.trim()));
+            } catch (NumberFormatException ignored) {
+                // 回退默认值
+            }
+        }
+        return 10;
     }
 
     private WechatPolicyDecision mcpAllowed(String toolName) {
