@@ -1,0 +1,30 @@
+# 环境变量文件（包含敏感信息）
+.env
+.paicli/*
+!.paicli/
+!.paicli/PAI.md
+PAI.local.md
+
+# YiCLI 运行时数据（本地生成，不提交）
+.yicli/
+
+# 内部开发记录，不上传
+难点.md
+
+# 编译输出
+target/
+*.class
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# 日志
+*.log
+
+# 操作系统
+.DS_Store
+Thumbs.db
+/reports
+temp_articles.json
