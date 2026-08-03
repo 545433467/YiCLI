@@ -46,7 +46,7 @@ class TerminalHitlHandlerTest {
 
         ApprovalResult cached = h.handler.requestApproval(WRITE_FILE_REQUEST);
         assertEquals(ApprovalResult.Decision.APPROVED_ALL, cached.decision());
-        assertTrue(h.output().contains("已在本次会话中全部放行"),
+        assertTrue(h.output().contains("已全部放行"),
                 "第二次应命中缓存；实际输出：" + h.output());
     }
 
@@ -69,7 +69,31 @@ class TerminalHitlHandlerTest {
         ApprovalResult cached = h.handler.requestApproval(MCP_CHROME_CLICK_REQUEST);
 
         assertEquals(ApprovalResult.Decision.APPROVED_ALL_BY_SERVER, cached.decision());
-        assertTrue(h.output().contains("已在本次会话中全部放行"));
+        assertTrue(h.output().contains("已全部放行"));
+    }
+
+    @Test
+    void approveAllQuotaExhaustedReprompts() {
+        String old = System.getProperty("yicli.hitl.approve.all.limit");
+        System.setProperty("yicli.hitl.approve.all.limit", "2");
+        try {
+            // 第一次 "a" 放行（额度 2）；第二次缓存命中（额度 1）；第三次额度用尽，重新走审批并回车批准
+            Harness h = Harness.withInput("a\n\n");
+            assertEquals(ApprovalResult.Decision.APPROVED_ALL,
+                    h.handler.requestApproval(WRITE_FILE_REQUEST).decision());
+            assertEquals(ApprovalResult.Decision.APPROVED_ALL,
+                    h.handler.requestApproval(WRITE_FILE_REQUEST).decision());
+            ApprovalResult third = h.handler.requestApproval(WRITE_FILE_REQUEST);
+            assertEquals(ApprovalResult.Decision.APPROVED, third.decision(),
+                    "额度用尽后应重新审批而不是继续自动放行");
+            assertTrue(h.output().contains("额度已用完"), h.output());
+        } finally {
+            if (old == null) {
+                System.clearProperty("yicli.hitl.approve.all.limit");
+            } else {
+                System.setProperty("yicli.hitl.approve.all.limit", old);
+            }
+        }
     }
 
     @Test

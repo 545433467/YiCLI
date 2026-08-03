@@ -52,6 +52,7 @@ public class SubAgent {
     private SkillContextBuffer skillContextBuffer;
     private final ConversationHistoryCompactor historyCompactor;
     private final PromptAssembler promptAssembler = PromptAssembler.createDefault();
+    private volatile String lastTaskContent = "";
 
     public SubAgent(String name, AgentRole role, LlmClient llmClient, ToolRegistry toolRegistry) {
         this.name = name;
@@ -172,6 +173,7 @@ public class SubAgent {
      */
     public AgentMessage execute(AgentMessage task, PrintStream out) {
         log.info("[{}] executing task from {}: type={}", name, task.fromAgent(), task.type());
+        this.lastTaskContent = task == null || task.content() == null ? "" : task.content();
         pruneHistoricalImagePayloads();
         refreshSystemPrompt();
         String taskContent = prependSkillBodies(task.content());
@@ -328,6 +330,7 @@ public class SubAgent {
     }
 
     private List<ToolExecutionResult> executeToolCalls(List<LlmClient.ToolCall> toolCalls) {
+        toolRegistry.setCallerContextForNextBatch("子代理 " + name + " 的子任务: " + preview(lastTaskContent, 80));
         List<ToolInvocation> invocations = new ArrayList<>();
         for (LlmClient.ToolCall toolCall : toolCalls) {
             String toolName = toolCall.function().name();
@@ -341,6 +344,14 @@ public class SubAgent {
             log.info("[{}] executing {} tool calls in parallel", name, invocations.size());
         }
         return toolRegistry.executeTools(invocations);
+    }
+
+    private static String preview(String content, int maxLength) {
+        if (content == null) {
+            return "";
+        }
+        String normalized = content.replace("\r\n", " ").replace('\n', ' ').trim();
+        return normalized.length() <= maxLength ? normalized : normalized.substring(0, maxLength) + "...";
     }
 
     private void appendImageToolMessages(List<ToolExecutionResult> toolResults) {

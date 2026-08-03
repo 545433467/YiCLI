@@ -53,12 +53,26 @@ public final class YiCliEnv {
     public static final Key MCP_AUTO_RESTART = new Key(
             "mcpAutoRestart", "YICLI_MCP_AUTO_RESTART", "yicli.mcp.auto.restart",
             "MCP server 进程崩溃后自动重启", "true");
+    public static final Key HITL_TIMEOUT_SECONDS = new Key(
+            "hitlTimeoutSeconds", "YICLI_HITL_TIMEOUT_SECONDS", "yicli.hitl.timeout.seconds",
+            "HITL 审批超时秒数（0 = 不限时，超时自动拒绝）", "0");
+    public static final Key HEADLESS_COMMAND_ALLOWLIST = new Key(
+            "headlessCommandAllowlist", "YICLI_HEADLESS_COMMAND_ALLOWLIST", "yicli.headless.command.allowlist",
+            "无头模式 execute_command 精确白名单（逗号分隔）", "");
+    public static final Key HEADLESS_MCP_ALLOWLIST = new Key(
+            "headlessMcpAllowlist", "YICLI_HEADLESS_MCP_ALLOWLIST", "yicli.headless.mcp.allowlist",
+            "无头模式 MCP 工具白名单（工具名或 server 名，逗号分隔）", "");
+    public static final Key HITL_APPROVE_ALL_LIMIT = new Key(
+            "hitlApproveAllLimit", "YICLI_HITL_APPROVE_ALL_LIMIT", "yicli.hitl.approve.all.limit",
+            "全部放行额度（次）：用尽后需重新审批", "10");
 
     public static final List<Key> ALL = List.of(
             RENDERER, LOG_LEVEL, LOG_DIR, LSP_ENABLED, LSP_MAX_DIAGNOSTICS,
             SNAPSHOT_ENABLED, MCP_STARTUP_WAIT_SECONDS,
             LLM_RETRY_MAX_ATTEMPTS, LLM_RETRY_BACKOFF_SECONDS, NO_STATUSBAR,
-            SANDBOX_MODE, SANDBOX_IMAGE, TELEMETRY_ENABLED, MCP_AUTO_RESTART
+            SANDBOX_MODE, SANDBOX_IMAGE, TELEMETRY_ENABLED, MCP_AUTO_RESTART,
+            HITL_TIMEOUT_SECONDS, HEADLESS_COMMAND_ALLOWLIST, HEADLESS_MCP_ALLOWLIST,
+            HITL_APPROVE_ALL_LIMIT
     );
 
     private YiCliEnv() {

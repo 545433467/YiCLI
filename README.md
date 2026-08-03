@@ -141,7 +141,10 @@ mvn test -Dtest=PromptGoldenTest -Dyicli.golden.update=true -DskipTests=false
 1. 文件类工具路径强制限定在项目根内（PathGuard）
 2. `execute_command` 黑名单拦截 `sudo` / `rm -rf 全盘` / `mkfs` / `dd of=/dev` / `curl|sh` 等
 3. 危险工具（write_file / execute_command / create_project / revert_turn / 所有 MCP 工具）默认走 HITL 审批
-4. 批准过的调用按 (tool, 参数) 精确匹配记入 `~/.yicli/permissions.json`，跨会话免打扰；微信通道走非交互式默认拒绝策略
+4. 批准过的调用按 (tool, 参数) 精确匹配记入 `~/.yicli/permissions.json`，跨会话免打扰；"全部放行"有次数上限（`YICLI_HITL_APPROVE_ALL_LIMIT`，默认 10 次），用尽后重新审批
+5. 审批框做 ANSI/控制字符清洗，防止终端注入伪造审批结果
+6. 审计脱敏：write_file 不落 content 正文，MCP 参数按字段名掩码 token/key/secret 等
+7. 非交互通道（微信、Runtime API、后台任务）走非交互默认拒绝策略：只读放行、write_file 拒绝敏感文件（`.env` / `.git/` / `*.pem` / `id_rsa` 等）与密钥内容、execute_command / MCP 需精确白名单；微信写入另有每分钟频率上限
 
 ## 已知边界
 

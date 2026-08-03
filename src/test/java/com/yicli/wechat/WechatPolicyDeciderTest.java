@@ -45,4 +45,48 @@ class WechatPolicyDeciderTest {
         assertFalse(decider.decide("save_memory", "{\"fact\":\"secret\"}").allowed());
         assertFalse(decider.decide("browser_connect", "{}").allowed());
     }
+
+    @Test
+    void deniesWriteToSensitiveFile() {
+        WechatPolicyDecider decider = new WechatPolicyDecider(WechatPolicyConfig.forWorkspace(tempDir));
+
+        assertFalse(decider.decide("write_file",
+                "{\"path\":\".env\",\"content\":\"GLM_API_KEY=x\"}").allowed());
+        assertFalse(decider.decide("write_file",
+                "{\"path\":\"src/.git/config\",\"content\":\"x\"}").allowed());
+        assertFalse(decider.decide("write_file",
+                "{\"path\":\"keys/id_rsa\",\"content\":\"x\"}").allowed());
+        assertTrue(decider.decide("write_file",
+                "{\"path\":\"README.md\",\"content\":\"hello\"}").allowed());
+    }
+
+    @Test
+    void deniesWriteContainingSecrets() {
+        WechatPolicyDecider decider = new WechatPolicyDecider(WechatPolicyConfig.forWorkspace(tempDir));
+
+        assertFalse(decider.decide("write_file",
+                "{\"path\":\"notes.txt\",\"content\":\"-----BEGIN RSA PRIVATE KEY-----\"}").allowed());
+        assertFalse(decider.decide("write_file",
+                "{\"path\":\"notes.txt\",\"content\":\"api key: sk-abcdefghijklmnopqrstuvwxyz\"}").allowed());
+    }
+
+    @Test
+    void rateLimitsWritesPerMinute() {
+        String old = System.getProperty("yicli.wechat.write.per.minute");
+        System.setProperty("yicli.wechat.write.per.minute", "2");
+        try {
+            WechatPolicyDecider decider = new WechatPolicyDecider(WechatPolicyConfig.forWorkspace(tempDir));
+            String args = "{\"path\":\"a.txt\",\"content\":\"x\"}";
+
+            assertTrue(decider.decide("write_file", args).allowed());
+            assertTrue(decider.decide("write_file", args).allowed());
+            assertFalse(decider.decide("write_file", args).allowed(), "超过每分钟限额应拒绝");
+        } finally {
+            if (old == null) {
+                System.clearProperty("yicli.wechat.write.per.minute");
+            } else {
+                System.setProperty("yicli.wechat.write.per.minute", old);
+            }
+        }
+    }
 }

@@ -48,6 +48,30 @@ class RendererHitlHandlerTest {
     }
 
     @Test
+    void approveAllQuotaExhaustedPromptsRendererAgain() {
+        String old = System.getProperty("yicli.hitl.approve.all.limit");
+        System.setProperty("yicli.hitl.approve.all.limit", "1");
+        try {
+            StubRenderer stub = new StubRenderer();
+            stub.nextResult = ApprovalResult.approveAll();
+            RendererHitlHandler handler = new RendererHitlHandler(stub, true);
+
+            handler.requestApproval(ApprovalRequest.of("write_file", "{}", "test"));
+            assertEquals(1, stub.promptCount);
+
+            // 额度=1 已用尽：第二次必须再次询问 renderer
+            handler.requestApproval(ApprovalRequest.of("write_file", "{}", "test"));
+            assertEquals(2, stub.promptCount, "额度用尽后应重新询问 renderer");
+        } finally {
+            if (old == null) {
+                System.clearProperty("yicli.hitl.approve.all.limit");
+            } else {
+                System.setProperty("yicli.hitl.approve.all.limit", old);
+            }
+        }
+    }
+
+    @Test
     void approveAllByServerCoversFutureMcpCalls() {
         StubRenderer stub = new StubRenderer();
         stub.nextResult = ApprovalResult.approveAllByServer();

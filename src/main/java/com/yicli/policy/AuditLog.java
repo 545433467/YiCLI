@@ -2,7 +2,10 @@ package com.yicli.policy;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.yicli.browser.BrowserAuditMetadata;
 
 import java.io.IOException;
@@ -138,6 +141,78 @@ public class AuditLog {
                 "(?i)(\\b(?:token|key|password|secret|authorization)\\b\\s*[:=]\\s*)([^\\s,}]+)",
                 "$1***");
         return sanitized;
+    }
+
+    /**
+     * 审计前的参数脱敏：
+     * - write_file：content 只保留长度摘要，不落盘文件正文（可能含密钥/内网地址/真实代码）
+     * - MCP 工具：按 JSON 字段名结构化掩码（token/key/secret/password/authorization/credential 等）
+     * - 其余工具：走原有正则脱敏 + 截断
+     */
+    public static String redactArgs(String tool, String args) {
+        if (args == null) {
+            return null;
+        }
+        if ("write_file".equals(tool)) {
+            try {
+                ObjectNode node = (ObjectNode) mapper.readTree(args);
+                JsonNode content = node.get("content");
+                if (content != null) {
+                    node.put("content", "[content 已脱敏: " + content.asText("").length() + " 字符]");
+                }
+                return sanitize(node.toString());
+            } catch (Exception ignored) {
+                // 非法 JSON 走通用脱敏
+            }
+        }
+        if (tool != null && tool.startsWith("mcp__")) {
+            try {
+                return sanitize(maskSensitiveFields(mapper.readTree(args)).toString());
+            } catch (Exception ignored) {
+                // 非法 JSON 走通用脱敏
+            }
+        }
+        return sanitize(args);
+    }
+
+    private static JsonNode maskSensitiveFields(JsonNode node) {
+        if (node.isObject()) {
+            ObjectNode out = mapper.createObjectNode();
+            node.fields().forEachRemaining(entry -> {
+                String key = entry.getKey();
+                JsonNode value = entry.getValue();
+                if (isSensitiveFieldName(key)) {
+                    if (value.isTextual()) {
+                        out.put(key, "***");
+                    } else {
+                        out.set(key, maskSensitiveFields(value));
+                    }
+                } else {
+                    out.set(key, maskSensitiveFields(value));
+                }
+            });
+            return out;
+        }
+        if (node.isArray()) {
+            ArrayNode out = mapper.createArrayNode();
+            node.forEach(item -> out.add(maskSensitiveFields(item)));
+            return out;
+        }
+        return node.deepCopy();
+    }
+
+    private static boolean isSensitiveFieldName(String key) {
+        if (key == null) {
+            return false;
+        }
+        String k = key.toLowerCase(Locale.ROOT);
+        return k.equals("key")
+                || k.contains("token")
+                || k.contains("apikey") || k.contains("api_key") || k.contains("api-key")
+                || k.contains("secret")
+                || k.contains("password") || k.contains("passwd")
+                || k.contains("authorization") || k.contains("auth")
+                || k.contains("credential") || k.contains("bearer");
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

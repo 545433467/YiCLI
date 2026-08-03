@@ -82,7 +82,8 @@ public record ApprovalRequest(
         if (suggestion != null && !suggestion.isBlank()) {
             sb.append("├").append(border).append("┤\n");
             sb.append(formatBoxLine("执行理由:")).append("\n");
-            for (String line : wrapByDisplayWidth(suggestion, ARG_LINE_WIDTH)) {
+            String safeSuggestion = sanitizeTerminalText(suggestion, true);
+            for (String line : wrapByDisplayWidth(safeSuggestion == null ? "" : safeSuggestion, ARG_LINE_WIDTH)) {
                 sb.append(formatBoxIndented(line)).append("\n");
             }
         }
@@ -95,7 +96,10 @@ public record ApprovalRequest(
      */
     private String formatBoxField(String prefix, String value) {
         String label = prefix + ": ";
-        String safeValue = value == null ? "" : value;
+        String safeValue = sanitizeTerminalText(value, false);
+        if (safeValue == null) {
+            safeValue = "";
+        }
         int used = displayWidth(label) + 2;  // "│  " 占 2 显示列
         int target = BOX_INNER_WIDTH - used;
         String truncated = truncateByDisplayWidth(safeValue, target);
@@ -107,7 +111,10 @@ public record ApprovalRequest(
      * 构造一行："│  {text}{尾部 pad}│"
      */
     private String formatBoxLine(String text) {
-        String safe = text == null ? "" : text;
+        String safe = sanitizeTerminalText(text, false);
+        if (safe == null) {
+            safe = "";
+        }
         int target = BOX_INNER_WIDTH - 2;  // "│  " 前后各占
         String truncated = truncateByDisplayWidth(safe, target);
         String padded = padRightByDisplayWidth(truncated, target);
@@ -118,7 +125,10 @@ public record ApprovalRequest(
      * 构造缩进行："│    {text}{尾部 pad}│"（用于参数项 / 执行理由明细）
      */
     private String formatBoxIndented(String text) {
-        String safe = text == null ? "" : text;
+        String safe = sanitizeTerminalText(text, false);
+        if (safe == null) {
+            safe = "";
+        }
         int target = BOX_INNER_WIDTH - 4;  // "│    " 前占 4 列
         String truncated = truncateByDisplayWidth(safe, target);
         String padded = padRightByDisplayWidth(truncated, target);
@@ -145,7 +155,10 @@ public record ApprovalRequest(
                     String key = entry.getKey();
                     JsonNode valNode = entry.getValue();
                     if (valNode.isTextual()) {
-                        String v = valNode.asText();
+                        String v = sanitizeTerminalText(valNode.asText(), true);
+                        if (v == null) {
+                            v = "";
+                        }
                         if (v.length() > MAX_LONG_VALUE_PREVIEW) {
                             String head = v.substring(0, MAX_LONG_VALUE_PREVIEW)
                                     .replace("\n", "⏎");
@@ -168,7 +181,85 @@ public record ApprovalRequest(
         } catch (Exception ignored) {
             // 非法 JSON，退回到原样展示
         }
-        return wrapByDisplayWidth(args.trim(), ARG_LINE_WIDTH);
+        String safeArgs = sanitizeTerminalText(args.trim(), true);
+        return wrapByDisplayWidth(safeArgs == null ? "" : safeArgs, ARG_LINE_WIDTH);
+    }
+
+    /**
+     * 终端注入防护：剔除 ANSI 转义序列（CSI / OSC）与除换行外的控制字符。
+     * 审批框内容可能来自模型输出、网页抓取或文件内容，若原样写入终端，
+     * 恶意参数可以清屏、伪造提示甚至重画终端。
+     *
+     * @param keepNewline true 时保留换行（多行参数预览），false 时替换为空格（单行字段）
+     */
+    static String sanitizeTerminalText(String s, boolean keepNewline) {
+        if (s == null) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder(s.length());
+        int i = 0;
+        while (i < s.length()) {
+            char c = s.charAt(i);
+            if (c == '\u001b') {
+                if (i + 1 < s.length() && s.charAt(i + 1) == '[') {
+                    // CSI: ESC [ 参数... 最终字节(0x40-0x7E)
+                    int j = i + 2;
+                    while (j < s.length()) {
+                        char e = s.charAt(j);
+                        if (e >= 0x40 && e <= 0x7E) {
+                            j++;
+                            break;
+                        }
+                        if (e == '\n') {
+                            break;  // 防御未闭合序列
+                        }
+                        j++;
+                    }
+                    i = j;
+                    continue;
+                }
+                if (i + 1 < s.length() && s.charAt(i + 1) == ']') {
+                    // OSC: ESC ] ... BEL(0x07) 或 ST(ESC \)
+                    int j = i + 2;
+                    while (j < s.length()) {
+                        char e = s.charAt(j);
+                        if (e == 0x07) {
+                            j++;
+                            break;
+                        }
+                        if (e == '\u001b' && j + 1 < s.length() && s.charAt(j + 1) == '\\') {
+                            j += 2;
+                            break;
+                        }
+                        if (e == '\n') {
+                            break;
+                        }
+                        j++;
+                    }
+                    i = j;
+                    continue;
+                }
+                i++;  // 孤立 ESC 直接丢弃
+                continue;
+            }
+            if (c == '\n') {
+                sb.append(keepNewline ? c : ' ');
+                i++;
+                continue;
+            }
+            if (c == '\t') {
+                sb.append(' ');
+                i++;
+                continue;
+            }
+            if (c < 0x20 || c == 0x7F) {
+                i++;  // 其余控制字符丢弃
+                continue;
+            }
+            sb.append(c);
+            i++;
+        }
+        return sb.toString();
     }
 
     /**
