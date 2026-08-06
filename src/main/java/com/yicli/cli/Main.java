@@ -2616,11 +2616,17 @@ public class Main {
         String capabilities = "ReAct · Plan · MCP · Browser · Image · Tools · Memory · RAG";
         String state = mcp + " · " + skills + " · ReAct";
         List<String> lines = new ArrayList<>(List.of(
-                "   " + AnsiStyle.section("██████████") + "    " + AnsiStyle.emphasis("YiCLI") + " " + AnsiStyle.section("π") + "  " + AnsiStyle.subtle("v" + VERSION),
-                "   " + AnsiStyle.section("  ██  ██") + "    " + AnsiStyle.subtle(ready),
-                "   " + AnsiStyle.section("  ██  ██") + "    " + AnsiStyle.subtle(state),
-                "   " + AnsiStyle.section("  ██  ██") + "    " + AnsiStyle.subtle(capabilities),
-                "   " + AnsiStyle.section("  ██  ██"),
+                "  " + AnsiStyle.section("██╗   ██╗ ██╗  ██████╗ ██╗      ██╗"),
+                "  " + AnsiStyle.section("╚██╗ ██╔╝ ██║ ██╔════╝ ██║      ██║"),
+                "  " + AnsiStyle.section(" ╚████╔╝  ██║ ██║      ██║      ██║"),
+                "  " + AnsiStyle.section("  ╚██╔╝   ██║ ██║      ██║      ██║"),
+                "  " + AnsiStyle.section("   ██║    ██║ ╚██████╗ ███████╗ ██║"),
+                "  " + AnsiStyle.section("   ╚═╝    ╚═╝  ╚═════╝ ╚══════╝ ╚═╝"),
+                "",
+                "  " + AnsiStyle.emphasis("YiCLI") + "  " + AnsiStyle.subtle("v" + VERSION),
+                "  " + AnsiStyle.subtle(ready),
+                "  " + AnsiStyle.subtle(state),
+                "  " + AnsiStyle.subtle(capabilities),
                 "",
                 "Tips for getting started:",
                 "1. Type " + AnsiStyle.emphasis("/") + " for commands and Tab completion",

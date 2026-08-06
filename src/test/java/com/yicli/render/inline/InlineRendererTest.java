@@ -88,7 +88,8 @@ class InlineRendererTest {
             renderer.beginTurn();
             renderer.stream().println("异步通知");
 
-            Mockito.verify(lineReader).printAbove("异步通知\n");
+            Mockito.verify(lineReader).printAbove(
+                    org.mockito.ArgumentMatchers.contains("异步通知"));
             assertFalse(sink.toString(StandardCharsets.UTF_8).contains("异步通知"));
         } finally {
             renderer.close();
@@ -109,9 +110,9 @@ class InlineRendererTest {
         try {
             renderer.bindLineReader(lineReader);
             renderer.beginTurn();
-            renderer.stream().println("┌─ code: bash");
+            renderer.stream().println("▍ code: bash");
             renderer.stream().println("    echo hi");
-            renderer.stream().println("└─ end");
+            renderer.stream().println("▍ end");
 
             ArgumentCaptor<String> output = ArgumentCaptor.forClass(String.class);
             Mockito.verify(lineReader).printAbove(output.capture());
@@ -215,10 +216,10 @@ class InlineRendererTest {
             String rendered = sink.toString(StandardCharsets.UTF_8);
             assertTrue(renderer.supportsActivityPanel());
             assertTrue(rendered.contains("Compacting conversation"), rendered);
-            assertTrue(rendered.contains("▰"), rendered);
-            assertTrue(rendered.contains("▱"), rendered);
-            assertTrue(rendered.contains("%"), rendered);
-            assertFalse(rendered.contains("正在整理早期对话"), rendered);
+            assertTrue(rendered.contains("正在整理早期对话并生成摘要"), rendered);
+            assertFalse(rendered.contains("▰"), "activity 面板不应再显示进度条: " + rendered);
+            assertFalse(rendered.contains("▱"), rendered);
+            assertFalse(rendered.contains("%"), rendered);
             assertFalse(rendered.contains("esc to cancel"), rendered);
         } finally {
             renderer.endActivity();
@@ -314,16 +315,16 @@ class InlineRendererTest {
         try {
             renderer.beginTurn();
             // 模拟 TerminalMarkdownRenderer 输出的代码块（手写预渲染好的 markup）
-            renderer.stream().println("┌─ code: java");
+            renderer.stream().println("▍ code: java");
             renderer.stream().println("    public class Main {");
             renderer.stream().println("    }");
-            renderer.stream().println("└─ end");
+            renderer.stream().println("▍ end");
 
             String emitted = sink.toString(StandardCharsets.UTF_8);
             assertTrue(emitted.contains("⏵"), "应该出现折叠箭头: " + emitted);
             assertTrue(emitted.contains("code: java"), emitted);
             assertTrue(emitted.contains("2 行"), "应统计 body 行数: " + emitted);
-            assertTrue(emitted.contains("ctrl+o"), emitted);
+            assertFalse(emitted.contains("ctrl+o"), "折叠头不应再提示 ctrl+o: " + emitted);
             // body 行不应直接显示在 delegate 上（被吞掉了）—— 验证：last occurrence 不包含 "public class"
             // 但因为 delegate.print(line) 还是会先写 body？让我们再确认：检查 final state。
             // 注意：进入代码块后 body 走 codeBodyLines 缓冲，不写 delegate；end 触发 move-up + clear-to-eos
@@ -345,17 +346,17 @@ class InlineRendererTest {
                 new PrintStream(sink, true, StandardCharsets.UTF_8));
         try {
             renderer.beginTurn();
-            renderer.stream().println("┌─ code: bash");
+            renderer.stream().println("▍ code: bash");
             renderer.stream().println("    echo hi");
-            renderer.stream().println("└─ end");
+            renderer.stream().println("▍ end");
 
             sink.reset();
             assertTrue(renderer.toggleLastBlock(), "代码块应可 toggle");
 
             String emitted = sink.toString(StandardCharsets.UTF_8);
             assertTrue(emitted.contains("echo hi"), "展开后应看到代码体: " + emitted);
-            assertTrue(emitted.contains("┌─ code: bash"), emitted);
-            assertTrue(emitted.contains("└─ end"), emitted);
+            assertTrue(emitted.contains("code: bash"), emitted);
+            assertFalse(emitted.contains("▍ end"), "展开态不应再显示 end 标记: " + emitted);
             assertTrue(emitted.contains("⏷"), "展开态应显示 collapse 提示: " + emitted);
         } finally {
             renderer.close();

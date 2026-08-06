@@ -83,7 +83,7 @@ scheme 白名单(http/https) / 主机黑名单(localhost/loopback/link-local/sit
 - 退出条件由 LLM 自决（不返回 tool_calls 即结束）
 - `AgentBudget` 三种兜底：token 超预算 / 连续 3 轮相同调用 / 50 轮硬上限
 - 流式输出 reasoning_content + content；inline ReAct 用固定高度 live thinking 区动态预览 reasoning，同一次输入只把完整 reasoning 引用块落到 transcript 一次；live 区只允许清理自己占用的行，避免覆盖旧输出
-- inline 流式回答用低调 `▪` 标记起始，不再输出强标题；plain / 非流式兜底仍可使用传统 reasoning + answer 文本
+- inline 流式回答直接输出正文，不再用 `▪` 标记或表情标题；工具调用与代码块折叠态使用低调的 `⏵` 行（无 emoji、无 ctrl+o 提示），思考区无 spinner / 进度条；plain / 非流式兜底仍可使用传统 reasoning + answer 文本
 - `TerminalMarkdownRenderer` 渲染 Markdown 表格时按终端列宽分配列宽，长内容在单元格内部换行；CJK 字符按显示宽度计算，避免表格行被终端自动折断后错位
 
 ### Long Context Engineering

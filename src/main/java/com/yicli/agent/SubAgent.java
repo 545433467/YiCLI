@@ -389,18 +389,18 @@ public class SubAgent {
 
     private static String toolLabel(String toolName, int count) {
         return switch (toolName) {
-            case "read_file" -> "📖 读取 " + count + " 个文件";
-            case "write_file" -> "✏️ 写入 " + count + " 个文件";
-            case "list_dir" -> "📂 列出 " + count + " 个目录";
-            case "execute_command" -> "⚡ 执行 " + count + " 条命令";
-            case "create_project" -> "🏗️ 创建 " + count + " 个项目";
-            case "search_code" -> "🔍 搜索代码 " + count + " 次";
-            case "web_search" -> "🌐 联网搜索 " + count + " 次";
-            case "web_fetch" -> "📰 抓取 " + count + " 个网页";
-            case "save_memory" -> "💾 保存长期记忆 " + count + " 条";
+            case "read_file" -> "读取 " + count + " 个文件";
+            case "write_file" -> "写入 " + count + " 个文件";
+            case "list_dir" -> "列出 " + count + " 个目录";
+            case "execute_command" -> "执行 " + count + " 条命令";
+            case "create_project" -> "创建 " + count + " 个项目";
+            case "search_code" -> "搜索代码 " + count + " 次";
+            case "web_search" -> "联网搜索 " + count + " 次";
+            case "web_fetch" -> "抓取 " + count + " 个网页";
+            case "save_memory" -> "保存长期记忆 " + count + " 条";
             default -> toolName != null && toolName.startsWith("mcp__")
                     ? formatMcpLabel(toolName, count)
-                    : "🔧 " + toolName + " × " + count;
+                    : toolName + " × " + count;
         };
     }
 
@@ -408,8 +408,8 @@ public class SubAgent {
         String[] parts = toolName.split("__", 3);
         String display = parts.length == 3 ? parts[1] + "." + parts[2] : toolName;
         return count == 1
-                ? "🔌 调用 MCP 工具 " + display
-                : "🔌 调用 MCP 工具 " + display + " × " + count;
+                ? "调用 MCP 工具 " + display
+                : "调用 MCP 工具 " + display + " × " + count;
     }
 
     private static String extractKeyParam(String toolName, String argsJson) {
@@ -450,7 +450,7 @@ public class SubAgent {
      *
      * 与 {@link com.yicli.agent.Agent.StreamRenderer} 使用同一策略应对
      * "content 开始后又追加 reasoning"的场景：迟到的 reasoning 会被累积到 lateReasoning，
-     * 在 finish() 时以"🧠 补充思考"独立展示，避免混入结果区。
+     * 在 finish() 时以"补充思考"独立展示，避免混入结果区。
      */
     private static final class SubAgentStreamRenderer implements LlmClient.StreamListener {
         private final String agentName;
@@ -484,7 +484,7 @@ public class SubAgent {
                 if (pendingReasoning.toString().isBlank()) {
                     return;
                 }
-                out.println(AnsiStyle.heading("🧠 " + reasoningLabel() + " [" + agentName + "]"));
+                out.println(AnsiStyle.subtle(reasoningLabel() + " [" + agentName + "]"));
                 reasoningRenderer = new TerminalMarkdownRenderer(out);
                 reasoningRenderer.append(pendingReasoning.toString());
                 pendingReasoning.setLength(0);
@@ -507,7 +507,7 @@ public class SubAgent {
                     out.println();
                 } else if (pendingReasoning.length() > 0 && !pendingReasoning.toString().isBlank()) {
                     // 实质 reasoning 尚未流出就被 content 打断：先补打思考过程再切到结果
-                    out.println(AnsiStyle.heading("🧠 " + reasoningLabel() + " [" + agentName + "]"));
+                    out.println(AnsiStyle.subtle(reasoningLabel() + " [" + agentName + "]"));
                     TerminalMarkdownRenderer r = new TerminalMarkdownRenderer(out);
                     r.append(pendingReasoning.toString());
                     r.finish();
@@ -515,7 +515,7 @@ public class SubAgent {
                     pendingReasoning.setLength(0);
                     reasoningStarted = true;
                 }
-                out.println(AnsiStyle.section("🤖 " + contentLabel() + " [" + agentName + "]"));
+                out.println(AnsiStyle.section(contentLabel() + " [" + agentName + "]"));
                 contentRenderer = new TerminalMarkdownRenderer(out);
                 contentStarted = true;
                 streamedOutput = true;
@@ -558,7 +558,7 @@ public class SubAgent {
             String late = lateReasoning.toString().trim();
             if (!late.isEmpty()) {
                 out.println();
-                out.println(AnsiStyle.heading("🧠 补充思考 [" + agentName + "]"));
+                out.println(AnsiStyle.subtle("补充思考 [" + agentName + "]"));
                 TerminalMarkdownRenderer r = new TerminalMarkdownRenderer(out);
                 r.append(late);
                 r.finish();
@@ -583,7 +583,7 @@ public class SubAgent {
             String late = lateReasoning.toString().trim();
             if (!late.isEmpty()) {
                 out.println();
-                out.println(AnsiStyle.heading("🧠 补充思考 [" + agentName + "]"));
+                out.println(AnsiStyle.subtle("补充思考 [" + agentName + "]"));
                 TerminalMarkdownRenderer r = new TerminalMarkdownRenderer(out);
                 r.append(late);
                 r.finish();

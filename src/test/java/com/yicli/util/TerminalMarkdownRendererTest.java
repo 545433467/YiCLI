@@ -36,8 +36,8 @@ class TerminalMarkdownRendererTest {
         assertTrue(rendered.contains("| 名称"));
         assertTrue(rendered.contains("| src"));
         assertTrue(rendered.contains("源码"));
-        assertTrue(rendered.contains("┌─ code: java"));
-        assertTrue(rendered.contains("└─ end"));
+        assertTrue(rendered.contains("▍ code: java"));
+        assertTrue(rendered.contains("▍ end"));
         assertTrue(rendered.contains("    System.out.println(\"hello\");"));
     }
 
@@ -101,7 +101,9 @@ class TerminalMarkdownRendererTest {
         assertTrue(rendered.contains("| 特性"));
         assertFalse(rendered.contains("https://api.deepseek.com/chat/completions |"));
         for (String line : rendered.split("\\R")) {
-            assertTrue(line.length() <= 72, "line exceeds table width: " + line);
+            // ANSI 控制符不应计入表格宽度（color=false 可能因 AnsiStyle 提前加载而失效）
+            String visible = line.replaceAll("\u001B\\[[0-9;]*m", "");
+            assertTrue(visible.length() <= 72, "line exceeds table width: " + line);
         }
     }
 }

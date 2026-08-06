@@ -162,10 +162,10 @@ public final class TerminalMarkdownRenderer {
         if (!inCodeBlock) {
             ensureBlockSpacing();
             String label = language.isBlank() ? "code" : "code: " + language;
-            writeLine(AnsiStyle.codeLabel("┌─ " + label), BlockType.CODE_BLOCK);
+            writeLine(AnsiStyle.codeLabel("▍ " + label), BlockType.CODE_BLOCK);
             inCodeBlock = true;
         } else {
-            writeLine(AnsiStyle.codeLabel("└─ end"), BlockType.CODE_BLOCK);
+            writeLine(AnsiStyle.codeLabel("▍ end"), BlockType.CODE_BLOCK);
             inCodeBlock = false;
             writeBlankLine();
         }
