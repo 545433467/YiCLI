@@ -6,7 +6,7 @@ import java.util.List;
 /**
  * 行内可折叠块。
  *
- * <p>典型用途是工具调用的展示：折叠时一行 {@code ⏵ Read 3 files (ctrl+o to expand)}，
+ * <p>典型用途是工具调用的展示：折叠时一行 {@code ⏵ Read 3 files}，
  * 展开时多行原始内容 + 末行 {@code ⏷ collapse}。
  *
  * <p>实现方式：保存渲染后占用的行数，toggle 时通过 ANSI 序列
@@ -29,7 +29,7 @@ public final class FoldableBlock {
     public FoldableBlock(PrintStream out,
                          String collapsedHeader,
                          List<String> expandedLines) {
-        this(out, collapsedHeader, expandedLines, "⏷ collapse (ctrl+o)");
+        this(out, collapsedHeader, expandedLines, "⏷ collapse");
     }
 
     public FoldableBlock(PrintStream out,

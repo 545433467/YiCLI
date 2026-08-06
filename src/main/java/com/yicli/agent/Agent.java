@@ -888,9 +888,9 @@ public class Agent {
             return normalizedAnswer;
         }
         if (normalizedAnswer.isEmpty()) {
-            return "🧠 思考过程:\n" + normalizedReasoning;
+            return "思考过程:\n" + normalizedReasoning;
         }
-        return "🧠 思考过程:\n" + normalizedReasoning + "\n\n▪ " + normalizedAnswer;
+        return "思考过程:\n" + normalizedReasoning + "\n\n" + normalizedAnswer;
     }
 
     private String preview(String content, int maxLength) {
@@ -910,12 +910,12 @@ public class Agent {
      * 服务器可能把 reasoning_content 切成多段下发，甚至在 content 开始之后追加 reasoning；
      * 终端是线性的，无法回头修改已写出的文字。渲染策略：
      *
-     * 1. 在 content 出现之前，只要 reasoning 有实质内容（非空白），就立刻流式打印在"🧠 思考过程"下
-     *    同一次用户输入只打印一次"🧠 思考过程"标题；工具调用后的后续推理继续归在同一块下
+     * 1. 在 content 出现之前，只要 reasoning 有实质内容（非空白），就立刻流式打印在"思考过程"下
+     *    同一次用户输入只打印一次"思考过程"标题；工具调用后的后续推理继续归在同一块下
      * 2. 仅空白的 reasoning delta 会先暂存，不触发标题——避免出现"空的思考过程"
      * 3. content 一出现就收尾 reasoning 区，用低调标记进入正文并流式输出 content
      * 4. 如果 content 启动之后又收到 reasoning（服务器把思考内容追加在答案之后），
-     *    缓冲到 lateReasoning，最终在 finish() 用"🧠 补充思考"标题独立展示，不会污染回复区
+     *    缓冲到 lateReasoning，最终在 finish() 用"补充思考"标题独立展示，不会污染回复区
      */
     private static final class StreamRenderer implements LlmClient.StreamListener {
         private final Renderer renderer;
@@ -1039,7 +1039,6 @@ public class Agent {
                     pendingReasoning.setLength(0);
                     reasoningStarted = true;
                 }
-                out().print(AnsiStyle.answerMarker() + " ");
                 contentRenderer = newMarkdownRenderer();
                 contentStarted = true;
                 streamedOutput = true;
@@ -1088,7 +1087,7 @@ public class Agent {
             String late = lateReasoning.toString().trim();
             if (rendersReasoning() && !late.isEmpty()) {
                 out().println();
-                out().println(AnsiStyle.heading("🧠 补充思考"));
+                out().println(AnsiStyle.subtle("补充思考"));
                 TerminalMarkdownRenderer r = newMarkdownRenderer();
                 r.append(late);
                 r.finish();
@@ -1123,7 +1122,7 @@ public class Agent {
             String late = lateReasoning.toString().trim();
             if (rendersReasoning() && !late.isEmpty()) {
                 out().println();
-                out().println(AnsiStyle.heading("🧠 补充思考"));
+                out().println(AnsiStyle.subtle("补充思考"));
                 TerminalMarkdownRenderer r = newMarkdownRenderer();
                 r.append(late);
                 r.finish();
@@ -1209,7 +1208,7 @@ public class Agent {
                 if (!rendersReasoning()) {
                     return;
                 }
-                out().println(AnsiStyle.heading("🧠 思考过程"));
+                out().println(AnsiStyle.subtle("思考过程"));
                 reasoningHeadingPrinted = true;
             }
         }

@@ -379,7 +379,7 @@ public class PlanExecuteAgent {
                 .map(Task::getId)
                 .collect(Collectors.joining(", "));
         log.info("Executing parallel batch: {}", parallelTaskIds);
-        out.println("⚡ 本轮并行执行 " + executableTasks.size() + " 个任务: " + parallelTaskIds);
+        out.println("本轮并行执行 " + executableTasks.size() + " 个任务: " + parallelTaskIds);
 
         ExecutorService executor = Executors.newFixedThreadPool(Math.min(executableTasks.size(), 4), r -> {
             Thread t = new Thread(r, "yicli-plan-executor");
@@ -539,7 +539,7 @@ public class PlanExecuteAgent {
             ));
 
             // 在工具执行前 flush 并重置流式渲染器：避免 Markdown renderer pending 文本
-            // 被 HITL 提示"跨过"导致 🧠 / 🤖 标题与内容错位
+            // 被 HITL 提示"跨过"导致思考 / 输出标题与内容错位
             streamRenderer.resetBetweenIterations();
 
             List<ToolExecutionResult> toolResults = executeToolCalls(task.getId(), response.toolCalls());
@@ -657,18 +657,18 @@ public class PlanExecuteAgent {
 
     private static String toolLabel(String toolName, int count) {
         return switch (toolName) {
-            case "read_file" -> "📖 读取 " + count + " 个文件";
-            case "write_file" -> "✏️ 写入 " + count + " 个文件";
-            case "list_dir" -> "📂 列出 " + count + " 个目录";
-            case "execute_command" -> "⚡ 执行 " + count + " 条命令";
-            case "create_project" -> "🏗️ 创建 " + count + " 个项目";
-            case "search_code" -> "🔍 搜索代码 " + count + " 次";
-            case "web_search" -> "🌐 联网搜索 " + count + " 次";
-            case "web_fetch" -> "📰 抓取 " + count + " 个网页";
-            case "save_memory" -> "💾 保存长期记忆 " + count + " 条";
+            case "read_file" -> "读取 " + count + " 个文件";
+            case "write_file" -> "写入 " + count + " 个文件";
+            case "list_dir" -> "列出 " + count + " 个目录";
+            case "execute_command" -> "执行 " + count + " 条命令";
+            case "create_project" -> "创建 " + count + " 个项目";
+            case "search_code" -> "搜索代码 " + count + " 次";
+            case "web_search" -> "联网搜索 " + count + " 次";
+            case "web_fetch" -> "抓取 " + count + " 个网页";
+            case "save_memory" -> "保存长期记忆 " + count + " 条";
             default -> toolName != null && toolName.startsWith("mcp__")
                     ? formatMcpLabel(toolName, count)
-                    : "🔧 " + toolName + " × " + count;
+                    : toolName + " × " + count;
         };
     }
 
@@ -676,8 +676,8 @@ public class PlanExecuteAgent {
         String[] parts = toolName.split("__", 3);
         String display = parts.length == 3 ? parts[1] + "." + parts[2] : toolName;
         return count == 1
-                ? "🔌 调用 MCP 工具 " + display
-                : "🔌 调用 MCP 工具 " + display + " × " + count;
+                ? "调用 MCP 工具 " + display
+                : "调用 MCP 工具 " + display + " × " + count;
     }
 
     private static String extractKeyParam(String toolName, String argsJson) {
@@ -749,7 +749,7 @@ public class PlanExecuteAgent {
                 if (pendingReasoning.toString().isBlank()) {
                     return;
                 }
-                out.println(AnsiStyle.heading("🧠 任务思考 [" + taskId + "]"));
+                out.println(AnsiStyle.subtle("任务思考 [" + taskId + "]"));
                 reasoningRenderer = new TerminalMarkdownRenderer(out);
                 reasoningRenderer.append(pendingReasoning.toString());
                 pendingReasoning.setLength(0);
@@ -772,7 +772,7 @@ public class PlanExecuteAgent {
                     reasoningRenderer.finish();
                     out.println();
                 } else if (pendingReasoning.length() > 0 && !pendingReasoning.toString().isBlank()) {
-                    out.println(AnsiStyle.heading("🧠 任务思考 [" + taskId + "]"));
+                    out.println(AnsiStyle.subtle("任务思考 [" + taskId + "]"));
                     TerminalMarkdownRenderer r = new TerminalMarkdownRenderer(out);
                     r.append(pendingReasoning.toString());
                     r.finish();
@@ -781,7 +781,7 @@ public class PlanExecuteAgent {
                     reasoningStarted = true;
                 }
                 // content 可能只是 tool-call 前的叙述，也可能是最终回答，用"输出"避免误导。
-                out.println(AnsiStyle.section("🤖 任务输出 [" + taskId + "]"));
+                out.println(AnsiStyle.section("任务输出 [" + taskId + "]"));
                 contentRenderer = new TerminalMarkdownRenderer(out);
                 contentStarted = true;
                 streamedOutput = true;
@@ -806,7 +806,7 @@ public class PlanExecuteAgent {
 
         /**
          * 两次 iteration 之间（通常是一次 tool-call 分支完成后）调用：收尾当前渲染器并重置状态，
-         * 让下一轮迭代能重新打印 🧠 / 🤖 标题，避免标题和内容被 HITL / 工具执行中断而错位。
+         * 让下一轮迭代能重新打印思考 / 输出标题，避免标题和内容被 HITL / 工具执行中断而错位。
          */
         private synchronized void resetBetweenIterations() {
             if (reasoningRenderer != null) {
@@ -837,7 +837,7 @@ public class PlanExecuteAgent {
                 return;
             }
             out.println();
-            out.println(AnsiStyle.heading("🧠 补充思考 [" + taskId + "]"));
+            out.println(AnsiStyle.subtle("补充思考 [" + taskId + "]"));
             TerminalMarkdownRenderer renderer = new TerminalMarkdownRenderer(out);
             renderer.append(late);
             renderer.finish();

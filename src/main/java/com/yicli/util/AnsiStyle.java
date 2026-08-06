@@ -10,7 +10,6 @@ public final class AnsiStyle {
     private static final String ITALIC = "\u001B[3m";
     private static final String CYAN = "\u001B[36m";
     private static final String GREEN = "\u001B[32m";
-    private static final String YELLOW = "\u001B[33m";
     private static final String RED = "\u001B[31m";
     private static final String GRAY = "\u001B[90m";
     private static final String PURPLE = "\u001B[38;5;141m";
@@ -26,10 +25,6 @@ public final class AnsiStyle {
 
     public static String section(String text) {
         return wrap(BOLD + GREEN, text);
-    }
-
-    public static String answerMarker() {
-        return wrap(BOLD + GREEN, "▪");
     }
 
     public static String subtle(String text) {
@@ -67,7 +62,7 @@ public final class AnsiStyle {
     }
 
     public static String codeLabel(String text) {
-        return wrap(BOLD + YELLOW, text);
+        return wrap(DIM + GRAY, text);
     }
 
     public static String error(String text) {

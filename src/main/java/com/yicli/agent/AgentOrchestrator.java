@@ -171,7 +171,7 @@ public class AgentOrchestrator {
         out.println(summarizeSteps(steps) + "\n");
 
         // 3. 执行阶段：按依赖顺序分配给执行者
-        out.println(AnsiStyle.heading("⚡ 第二阶段：执行"));
+        out.println(AnsiStyle.heading("第二阶段：执行"));
         Map<String, Integer> retryCount = new ConcurrentHashMap<>();
         int singleStepCursor = 0;
         int batchIndex = 0;
@@ -196,7 +196,7 @@ public class AgentOrchestrator {
                 worker.clearHistory();
             } else {
                 // 多步批次：真正并行执行，每步用独立的 PrintStream 缓冲，完成后按 step_id 顺序 flush
-                out.println("⚡ 批次 #" + batchIndex + "：" + executable.size()
+                out.println("批次 #" + batchIndex + "：" + executable.size()
                         + " 个独立步骤并行执行（最多 " + workers.size() + " 个并发 Worker）\n");
                 runBatchParallel(executable, steps, retryCount);
             }
@@ -508,7 +508,7 @@ public class AgentOrchestrator {
             return;
         }
 
-        out.println("🔍 " + reviewer.getName() + " 正在审查步骤 [" + step.id() + "] 的结果...");
+        out.println(reviewer.getName() + " 正在审查步骤 [" + step.id() + "] 的结果...");
         AgentMessage reviewResult = reviewer.review(step.description(), result.content(), out);
         reviewer.clearHistory();
 

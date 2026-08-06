@@ -50,6 +50,26 @@ java -jar target/yicli-1.0-SNAPSHOT.jar
 yicli doctor                 # 环境体检：Java / ripgrep / API Key / 数据目录
 ```
 
+Windows 下也可以直接使用项目根目录的 `yicli.cmd`（cmd 或资源管理器双击均可），它会自动切到 UTF-8 代码页并设置 JVM 输出编码，其余参数原样透传：
+
+```bat
+yicli.cmd
+yicli.cmd doctor
+yicli.cmd wechat start
+yicli.cmd serve --http --port 8080
+```
+
+可用 `YICLI_JAR` 覆盖 jar 路径、`YICLI_JAVA_OPTS` 追加 JVM 参数。
+
+如果想获得 Claude Code 那种"任意目录直接敲命令"的体验，可运行一次安装器（把启动器装到 `%USERPROFILE%\.yicli\bin` 并加入用户 PATH）：
+
+```bat
+yicli-install.cmd            :: 安装全局 yicli 命令
+yicli-install.cmd uninstall  :: 卸载全局命令
+```
+
+装好后新开一个终端，在任何目录直接输入 `yicli` / `yicli doctor` 即可启动（当前目录即项目根）。
+
 首次启动会自动创建 `~/.yicli/` 数据目录（配置、记忆、快照、会话、审计均存放在此）。
 
 ## 命令

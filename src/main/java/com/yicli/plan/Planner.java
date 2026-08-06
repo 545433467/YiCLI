@@ -280,7 +280,7 @@ public class Planner {
                 return;
             }
             if (!reasoningStarted) {
-                out.println(AnsiStyle.heading("🧠 规划思考"));
+                out.println(AnsiStyle.subtle("规划思考"));
                 reasoningRenderer = new TerminalMarkdownRenderer(out);
                 reasoningStarted = true;
                 streamed = true;

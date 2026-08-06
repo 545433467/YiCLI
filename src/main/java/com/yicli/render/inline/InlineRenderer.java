@@ -68,7 +68,7 @@ public final class InlineRenderer implements Renderer {
                 : null;
         this.activityDisplay = statusBar == null
                 ? null
-                : new InlineActivityDisplay(terminal, out, statusBar);
+                : new InlineActivityDisplay(terminal, out);
         this.blockRegistry = new BlockRegistry();
         this.stream = createTranscriptStream(out);
     }
@@ -369,9 +369,9 @@ public final class InlineRenderer implements Renderer {
     }
 
     /**
-     * 行级状态机：检测 {@code ┌─ code:} / {@code └─ end} 边界，把整段代码块换成
+     * 行级状态机：检测 {@code ▍ code:} / {@code ▍ end} 边界，把整段代码块换成
      * {@link FoldableBlock}。代码体在流式期间不写到终端（避免大段文本刷屏），
-     * 等 {@code └─ end} 到达后用 {@code [<n>A[J} 回退覆盖原 header 行 + 输出折叠头。
+     * 等 {@code ▍ end} 到达后用 {@code [<n>A[J} 回退覆盖原 header 行 + 输出折叠头。
      *
      * <p>已知小瑕疵：代码块流式期间用户按 Ctrl+O 触发 {@link #redrawTranscript()} 会
      * 看到 header 行被重新渲染但 body 行尚未在 transcript 里——属于罕见时序，
@@ -392,7 +392,7 @@ public final class InlineRenderer implements Renderer {
     private void processStreamedLine(String line) {
         String stripped = stripAnsi(line).trim();
 
-        if (!inCodeBlock && stripped.startsWith("┌─ code")) {
+        if (!inCodeBlock && stripped.startsWith("▍ code")) {
             // 进入代码块：写出 header，记录 transcript 位置，body 之后会被吞掉
             inCodeBlock = true;
             int colon = stripped.indexOf(':');
@@ -410,7 +410,7 @@ public final class InlineRenderer implements Renderer {
         }
 
         if (inCodeBlock) {
-            if (stripped.startsWith("└─ end")) {
+            if (stripped.startsWith("▍ end")) {
                 int bodyLineCount = codeBodyLines.size();
                 inCodeBlock = false;
 
@@ -423,17 +423,15 @@ public final class InlineRenderer implements Renderer {
                 }
 
                 String label = codeLanguage.isEmpty() ? "code" : "code: " + codeLanguage;
-                String collapsedHeader = AnsiStyle.subtle(
-                        "⏵ " + label + " (" + bodyLineCount + " 行, ctrl+o to expand)");
+                String collapsedHeader = AnsiStyle.subtle("⏵ " + label + " · " + bodyLineCount + " 行");
 
                 List<String> expandedLines = new ArrayList<>();
-                expandedLines.add(stripTrailingNewline(codeHeaderLine));
+                expandedLines.add(AnsiStyle.subtle(label));
                 for (String body : codeBodyLines) {
                     expandedLines.add(stripTrailingNewline(body));
                 }
-                expandedLines.add(stripTrailingNewline(line));
 
-                FoldableBlock block = new FoldableBlock(out, collapsedHeader, expandedLines, "⏷ collapse (ctrl+o)");
+                FoldableBlock block = new FoldableBlock(out, collapsedHeader, expandedLines, "⏷ collapse");
                 blockRegistry.register(block);
 
                 if (codeStartTranscriptIndex >= 0 && codeStartTranscriptIndex < transcript.size()) {

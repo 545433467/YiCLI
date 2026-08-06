@@ -22,7 +22,7 @@ class ToolCallRendererTest {
         String header = ToolCallRenderer.collapsedHeader(grouped);
         assertTrue(header.contains("⏵"), header);
         assertTrue(header.contains("读取 2 个文件"), header);
-        assertTrue(header.contains("ctrl+o"), header);
+        assertFalse(header.contains("ctrl+o"), header);
     }
 
     @Test
@@ -62,7 +62,7 @@ class ToolCallRendererTest {
         var grouped = ToolCallRenderer.group(List.of(
                 tc("read_file", "{\"path\":\"README.md\"}")));
         List<String> lines = ToolCallRenderer.expandedLines(grouped);
-        assertTrue(lines.stream().anyMatch(l -> l.contains("📖 读取 1 个文件")), lines.toString());
+        assertTrue(lines.stream().anyMatch(l -> l.contains("读取 1 个文件")), lines.toString());
         assertTrue(lines.stream().anyMatch(l -> l.contains("README.md")), lines.toString());
     }
 
@@ -93,14 +93,14 @@ class ToolCallRendererTest {
 
     @Test
     void toolLabelRendersBuiltinTools() {
-        assertEquals("📖 读取 1 个文件", ToolCallRenderer.toolLabel("read_file", 1));
-        assertEquals("✏️ 写入 2 个文件", ToolCallRenderer.toolLabel("write_file", 2));
-        assertEquals("⚡ 执行 1 条命令", ToolCallRenderer.toolLabel("execute_command", 1));
+        assertEquals("读取 1 个文件", ToolCallRenderer.toolLabel("read_file", 1));
+        assertEquals("写入 2 个文件", ToolCallRenderer.toolLabel("write_file", 2));
+        assertEquals("执行 1 条命令", ToolCallRenderer.toolLabel("execute_command", 1));
     }
 
     @Test
     void toolLabelRendersMcpTool() {
-        assertEquals("🔌 调用 MCP 工具 chrome-devtools.click",
+        assertEquals("调用 MCP 工具 chrome-devtools.click",
                 ToolCallRenderer.toolLabel("mcp__chrome-devtools__click", 1));
     }
 
